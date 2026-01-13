@@ -1,10 +1,14 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Notification struct {
-	ID        uint `json:"id" gorm:"primarykey"`
-	UserID    uint `json:"user_id"`
+	gorm.Model
+	UserID    uint `json:"user_id" gorm:"index"`
 	Type      string `json:"type"` // тут либо покупка билетов, уведомление о мероприятиях, и напоминания 
 	Title     string `json:"title"`
 	Body      string `json:"body"`

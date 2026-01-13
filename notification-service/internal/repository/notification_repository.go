@@ -50,9 +50,8 @@ func (r *notificationRepo) GetNotifications(userID uint, limit int, lastID uint)
 }
 
 func (r *notificationRepo) AllRead(userID uint) error {
-	var list []models.Notification
 	if err := r.db.
-		Model(&list).
+		Model(&models.Notification{}).
 		Where("user_id = ? AND read = ?", userID, false).
 		Update("read", true).Error; err != nil {
 		return dto.ErrNotificationUpdateFailed
@@ -62,9 +61,8 @@ func (r *notificationRepo) AllRead(userID uint) error {
 }
 
 func (r *notificationRepo) ReadNotificationsByID(userID, id uint) error {
-	var not models.Notification
 	if err := r.db.
-		Model(&not).
+		Model(&models.Notification{}).
 		Where("id = ? AND user_id = ?", id, userID).
 		Update("read", true).Error; err != nil {
 		return dto.ErrNotificationUpdateFailed
@@ -74,10 +72,9 @@ func (r *notificationRepo) ReadNotificationsByID(userID, id uint) error {
 }
 
 func (r *notificationRepo) DeleteNotificationsByID(userID, id uint) error {
-	var not models.Notification
 	if err := r.db.
 		Where("id = ? AND user_id = ?", id, userID).
-		Delete(&not).Error; err != nil {
+		Delete(&models.Notification{}).Error; err != nil {
 		return dto.ErrNotificationDeleteFailed
 	}
 
@@ -102,10 +99,10 @@ func (r *notificationRepo) UpdateNotificationPreferences(pref *models.Notificati
 }
 
 func (r *notificationRepo) UnreadNotificationsCounts(userID uint) (int64, error) {
-	var list []models.Notification
 	var count int64
-	if err := r.db.Model(&list).Where("user_id = ? AND read = ?", userID, false).Count(&count).Error; err != nil {
-		return count, err
+	if err := r.db.Model(&models.Notification{}).Where("user_id = ? AND read = ?", userID, false).Count(&count).Error; err != nil {
+		return 0,  dto.ErrUnreadCountFailed
 	}
-	return count, dto.ErrUnreadCountFailed
+	
+	return count, nil
 }
