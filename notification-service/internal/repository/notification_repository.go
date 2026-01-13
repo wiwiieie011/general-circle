@@ -43,7 +43,7 @@ func (r *notificationRepo) GetNotifications(userID uint, limit int, lastID uint)
 	}
 
 	if err := q.Find(&nots).Error; err != nil {
-		return nil, dto.ErrNotificationsNotFound
+		return []models.Notification{}, nil
 	}
 
 	return nots, nil
