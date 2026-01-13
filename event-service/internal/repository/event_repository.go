@@ -29,11 +29,7 @@ func (r *gormEventRepository) Create(event *models.Event) error {
 		return dto.ErrEventIsNil
 	}
 
-	if err := r.db.Create(event).Error; err != nil {
-		return err
-	}
-
-	return nil
+	return r.db.Create(event).Error
 }
 
 func (r *gormEventRepository) GetByID(id uint) (*models.Event, error) {
@@ -52,30 +48,24 @@ func (r *gormEventRepository) Update(event *models.Event) error {
 		return dto.ErrEventIsNil
 	}
 
-	if err := r.db.Save(event).Error; err != nil {
-		return err
-	}
-
-	return nil
+	return r.db.Save(event).Error
 }
 
 func (r *gormEventRepository) Delete(id uint) error {
-	if err := r.db.Delete(&models.Event{}, id).Error; err != nil {
-		return err
-	}
+	var event models.Event
 
-	return nil
+	return r.db.Delete(&event, id).Error
 }
 
 func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, error) {
 	db := r.db.Model(&models.Event{})
 
 	if query.Title != "" {
-		db = db.Where("events.title ILIKE ?", "%"+query.Title+"%")
+		db = db.Where("title ILIKE ?", "%"+query.Title+"%")
 	}
 
 	if query.Status != "" {
-		db = db.Where("events.status = ?", query.Status)
+		db = db.Where("status = ?", query.Status)
 	}
 
 	sortBy := strings.ToLower(strings.TrimSpace(query.SortBy))
@@ -88,7 +78,7 @@ func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, er
 
 	sortField, ok := validSortFields[sortBy]
 	if !ok {
-		sortField = "events.created_at"
+		sortField = dto.DefaultSortField
 	}
 
 	validOrders := map[string]string{
@@ -98,15 +88,15 @@ func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, er
 
 	order, ok := validOrders[sortOrder]
 	if !ok {
-		order = "DESC"
+		order = dto.DefaultSortOrder
 	}
 
 	if query.Page < 1 {
-		query.Page = 1
+		query.Page = dto.DefaultPage
 	}
 
 	if query.Limit < 1 {
-		query.Limit = 10
+		query.Limit = dto.DefaultLimit
 	}
 
 	offset := (query.Page - 1) * query.Limit
