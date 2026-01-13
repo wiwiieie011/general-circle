@@ -1,0 +1,11 @@
+package models
+
+import "gorm.io/gorm"
+
+type Event struct {
+	gorm.Model
+	Title  string `json:"title"`
+	Status string `json:"status"`
+	Seats  *int   `json:"seats"`
+	UserID uint   `json:"user_id"`
+}
