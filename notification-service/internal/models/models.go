@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 )
 
@@ -13,7 +11,6 @@ type Notification struct {
 	Title     string `json:"title"`
 	Body      string `json:"body"`
 	Read      bool `json:"read"`
-	CreatedAt time.Time `json:"created_at"`
 }
 
 type NotificationPreference struct {
