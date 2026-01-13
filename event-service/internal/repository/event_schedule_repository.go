@@ -1,0 +1,43 @@
+package repository
+
+import (
+	"event-service/internal/dto"
+	"event-service/internal/models"
+
+	"gorm.io/gorm"
+)
+
+type EventScheduleRepository interface {
+	Create(schedule *models.EventSchedule) error
+	GetByID(id uint) (*models.EventSchedule, error)
+}
+
+type gormScheduleRepository struct {
+	db *gorm.DB
+}
+
+func NewEventScheduleRepository(db *gorm.DB) EventScheduleRepository {
+	return &gormScheduleRepository{db: db}
+}
+
+func (r *gormScheduleRepository) Create(schedule *models.EventSchedule) error {
+	if schedule == nil {
+		return dto.ErrEventScheduleIsNil
+	}
+
+	if err := r.db.Create(schedule).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *gormScheduleRepository) GetByID(id uint) (*models.EventSchedule, error) {
+	var schedule models.EventSchedule
+
+	if err := r.db.First(&schedule, id).Error; err != nil {
+		return nil, err
+	}
+
+	return &schedule, nil
+}
