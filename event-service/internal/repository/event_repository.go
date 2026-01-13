@@ -52,9 +52,7 @@ func (r *gormEventRepository) Update(event *models.Event) error {
 }
 
 func (r *gormEventRepository) Delete(id uint) error {
-	var event models.Event
-
-	return r.db.Delete(&event, id).Error
+	return r.db.Delete(&models.Event{}, id).Error
 }
 
 func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, error) {
@@ -72,13 +70,13 @@ func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, er
 	sortOrder := strings.ToLower(strings.TrimSpace(query.SortOrder))
 
 	validSortFields := map[string]string{
-		"title":      "events.title",
-		"created_at": "events.created_at",
+		"title":      "title",
+		"created_at": "created_at",
 	}
 
 	sortField, ok := validSortFields[sortBy]
 	if !ok {
-		sortField = dto.DefaultSortField
+		sortField = "created_at"
 	}
 
 	validOrders := map[string]string{
@@ -88,7 +86,7 @@ func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, er
 
 	order, ok := validOrders[sortOrder]
 	if !ok {
-		order = dto.DefaultSortOrder
+		order = "DESC"
 	}
 
 	if query.Page < 1 {
