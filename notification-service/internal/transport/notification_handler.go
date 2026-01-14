@@ -1,1 +1,160 @@
 package transport
+
+import (
+	"log/slog"
+	"net/http"
+	"notification-service/internal/dto"
+	"notification-service/internal/services"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+)
+
+type NotificationHandler struct {
+	srv services.NotificationService
+	log *slog.Logger
+}
+
+func NewNotificationHandler(srv services.NotificationService, log *slog.Logger) *NotificationHandler {
+	return &NotificationHandler{
+		srv: srv,
+		log: log,
+	}
+}
+
+func (h *NotificationHandler) RegisterRoutes(r *gin.Engine) {
+	notification := r.Group("/notifications")
+	{
+		notification.GET("", h.GetAllNotifications)
+		notification.PUT("/:id/read", h.ReadNotificationByID)
+		notification.PUT("/read-all", h.ReadAllNotification)
+		notification.DELETE("/:id", h.DeleteNotification)
+		notification.GET("/preferences", h.GetNotificationsPreferences)
+		notification.PATCH("/preferences", h.UpdateNotificationPreferences)
+		notification.GET("/unread-count", h.Count)
+	}
+}
+
+
+
+func (h *NotificationHandler) GetAllNotifications(ctx *gin.Context) {
+	userID := ctx.GetUint("user_id")
+
+	limitStr := ctx.DefaultQuery("limit", "50")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit <= 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit"})
+		return
+	}
+
+	var lastID uint
+	if lastIDStr := ctx.Query("last_id"); lastIDStr != "" {
+		val, err := strconv.ParseUint(lastIDStr, 10, 64)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid last_id"})
+			return
+		}
+		lastID = uint(val)
+	}
+
+	list, err := h.srv.GetNotifications(userID, limit, lastID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, list)
+}
+
+func (h *NotificationHandler) ReadAllNotification(ctx *gin.Context) {
+	userID := ctx.GetUint("user_id")
+
+	if err := h.srv.CheckAll(userID); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "all notifications marked as read"})
+}
+
+
+func (h *NotificationHandler) ReadNotificationByID(ctx *gin.Context) {
+	userID := ctx.GetUint("user_id")
+
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid notification id"})
+		return
+	}
+
+	if err := h.srv.CheckNotificationsByID(userID, uint(id)); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "notification marked as read"})
+}
+
+
+func (h *NotificationHandler) DeleteNotification(ctx *gin.Context) {
+	userID := ctx.GetUint("user_id")
+
+	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid notification id"})
+		return
+	}
+
+	if err := h.srv.DeleteNotificationByID(userID, uint(id)); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "notification deleted"})
+}
+
+
+func (h *NotificationHandler) GetNotificationsPreferences(ctx *gin.Context) {
+	userID := ctx.GetUint("user_id")
+
+	settings, err := h.srv.GetNotificationPreferences(userID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, settings)
+}
+
+
+
+func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
+
+	userID := ctx.GetUint("user_id")
+
+	var req dto.UpdateNotificationPreferencesRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	settings, err := h.srv.Update(userID,req)
+	if err != nil {
+		ctx.IndentedJSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.IndentedJSON(http.StatusOK, settings)
+}
+
+func (h *NotificationHandler) Count(ctx *gin.Context) {
+	userID := ctx.GetUint("user_id")
+
+	count, err := h.srv.Count(userID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"unread count": count})
+}
