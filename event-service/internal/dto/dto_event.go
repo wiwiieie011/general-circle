@@ -1,19 +1,25 @@
 package dto
 
-import "time"
+type Status string
 
-type CreateScheduleRequest struct {
-	EventID      uint      `json:"event_id"`
-	ActivityName string    `json:"activity_name"`
-	Speaker      string    `json:"speaker"`
-	StartAt      time.Time `json:"start_at"`
-	EndAt        time.Time `json:"end_at"`
+const (
+	Draft     Status = "draft"
+	Published Status = "published"
+	Cancelled Status = "cancelled"
+)
+
+type CreateEventRequest struct {
+	Title      string `json:"title"`
+	Status     Status `json:"status"`
+	Seats      *int   `json:"seats"`
+	UserID     uint   `json:"user_id"`
+	CategoryID *uint  `json:"category_id"`
 }
 
-type UpdateScheduleRequest struct {
-	EventID      *uint      `json:"event_id"`
-	ActivityName *string    `json:"activity_name"`
-	Speaker      *string    `json:"speaker"`
-	StartAt      *time.Time `json:"start_at"`
-	EndAt        *time.Time `json:"end_at"`
+type UpdateEventRequest struct {
+	Title      *string `json:"title"`
+	Status     *Status `json:"status"`
+	Seats      *int    `json:"seats"`
+	UserID     *uint   `json:"user_id"`
+	CategoryID *uint   `json:"category_id"`
 }
