@@ -24,7 +24,6 @@ func (r *gormScheduleRepository) Create(schedule *models.EventSchedule) error {
 	if schedule == nil {
 		return dto.ErrEventScheduleIsNil
 	}
-
 	return r.db.Create(schedule).Error
 }
 
@@ -34,6 +33,5 @@ func (r *gormScheduleRepository) GetByID(id uint) (*models.EventSchedule, error)
 	if err := r.db.First(&schedule, id).Error; err != nil {
 		return nil, err
 	}
-
 	return &schedule, nil
 }

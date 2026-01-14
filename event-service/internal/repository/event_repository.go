@@ -28,18 +28,17 @@ func (r *gormEventRepository) Create(event *models.Event) error {
 	if event == nil {
 		return dto.ErrEventIsNil
 	}
-
 	return r.db.Create(event).Error
 }
 
 func (r *gormEventRepository) GetByID(id uint) (*models.Event, error) {
 	var event models.Event
 
-	if err := r.db.Preload("Schedule").
+	if err := r.db.Preload("Category").
+		Preload("Schedule").
 		First(&event, id).Error; err != nil {
 		return nil, err
 	}
-
 	return &event, nil
 }
 
@@ -47,7 +46,6 @@ func (r *gormEventRepository) Update(event *models.Event) error {
 	if event == nil {
 		return dto.ErrEventIsNil
 	}
-
 	return r.db.Save(event).Error
 }
 
@@ -101,13 +99,13 @@ func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, er
 
 	var events []models.Event
 
-	if err := db.Preload("Schedule").
+	if err := db.Preload("Category").
+		Preload("Schedule").
 		Order(sortField + " " + order).
 		Limit(query.Limit).
 		Offset(offset).
 		Find(&events).Error; err != nil {
 		return nil, err
 	}
-
 	return events, nil
 }
