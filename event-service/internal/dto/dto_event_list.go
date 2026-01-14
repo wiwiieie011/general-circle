@@ -1,5 +1,10 @@
 package dto
 
+const (
+	DefaultPage      = 1
+	DefaultLimit     = 10
+)
+
 type EventListQuery struct {
 	// Фильтры
 	Title  string `form:"title"`
