@@ -3,8 +3,6 @@ package dto
 const (
 	DefaultPage      = 1
 	DefaultLimit     = 10
-	DefaultSortField = "events.created_at"
-	DefaultSortOrder = "DESC"
 )
 
 type EventListQuery struct {

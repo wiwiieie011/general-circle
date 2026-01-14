@@ -52,7 +52,7 @@ func (r *gormEventRepository) Update(event *models.Event) error {
 }
 
 func (r *gormEventRepository) Delete(id uint) error {
-	return r.db.Delete(&models.Event{}, id).Error
+	return r.db.Preload("Schedule").Delete(&models.Event{}, id).Error
 }
 
 func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, error) {
