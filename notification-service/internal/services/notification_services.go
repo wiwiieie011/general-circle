@@ -8,7 +8,7 @@ import (
 	"notification-service/internal/repository"
 )
 
-type NotifictaonService interface {
+type NotificationService interface {
 	GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error)
 	CheckAll(userID uint) error
 	CheckNotificationsByID(userID, id uint) error
@@ -23,7 +23,7 @@ type notificationService struct {
 	log              *slog.Logger
 }
 
-func NewNotifictaonService(notificationRepo repository.NotificationRepo, log *slog.Logger) NotifictaonService {
+func NewNotifictaonService(notificationRepo repository.NotificationRepo, log *slog.Logger) NotificationService {
 	return &notificationService{
 		notificationRepo: notificationRepo,
 		log:              log,
