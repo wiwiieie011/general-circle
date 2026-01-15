@@ -9,6 +9,7 @@ import (
 )
 
 type NotificationService interface {
+	CreateNotificationInternal(notification *models.Notification) error
 	GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error)
 	CheckAll(userID uint) error
 	CheckNotificationsByID(userID, id uint) error
@@ -29,6 +30,18 @@ func NewNotifictaonService(notificationRepo repository.NotificationRepo, log *sl
 		log:              log,
 	}
 }
+
+func (s *notificationService) CreateNotificationInternal(notification *models.Notification) error {
+    if notification.UserID == 0 {
+        return errors.New("invalid user id")
+    }
+
+    notification.Read = false
+
+    return s.notificationRepo.Create(notification)
+}
+
+
 
 func (s *notificationService) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
 	nots, err := s.notificationRepo.GetNotifications(userID, limit, lastID)
