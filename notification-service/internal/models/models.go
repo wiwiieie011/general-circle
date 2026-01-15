@@ -7,7 +7,7 @@ import (
 type Notification struct {
 	gorm.Model
 	UserID  uint   `json:"user_id" gorm:"index"`
-	EventID uint `json:"event_id" gorm:"uniqueIndex"`
+	EventID uint `json:"event_id" gorm:"index"`
 	Type    string `json:"type"` // тут либо покупка билетов, уведомление о мероприятиях, и напоминания
 	Title   string `json:"title"`
 	Body    string `json:"body"`
