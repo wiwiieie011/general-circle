@@ -24,6 +24,7 @@ func main() {
 	if err := db.AutoMigrate(
 		models.Event{},
 		models.EventSchedule{},
+		models.Category{},
 	); err != nil {
 		logger.Error("failed to migrate database", "error", err)
 		os.Exit(1)

@@ -12,3 +12,9 @@ var (
     ErrNotificationPreferencesUpdateFailed = errors.New("не удалось обновить настройки уведомлений")
     ErrUnreadCountFailed           = errors.New("не удалось посчитать непрочитанные уведомления")
 )
+
+var (
+	ErrUnauthorized          = errors.New("unauthorized")
+	ErrInvalidNotificationID = errors.New("invalid notification id")
+	ErrPreferencesNotFound   = errors.New("notification preferences not found")
+)
