@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"ticket-service/internal/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -24,6 +25,14 @@ func Connect(logger *slog.Logger) *gorm.DB {
 
 	if err != nil {
 		logger.Error("failed to connect", "error", err)
+		os.Exit(1)
+	}
+
+	if err := db.AutoMigrate(
+		&models.TicketType{},
+		&models.Ticket{},
+	); err != nil {
+		logger.Error("failed to migrate database", "error", err)
 		os.Exit(1)
 	}
 

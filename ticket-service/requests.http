@@ -1,0 +1,15 @@
+### Ping
+GET http://localhost:8082/ping
+Content-Type: application/json
+
+### Создать событие
+POST http://localhost:8082/events/15/ticket-types
+Content-Type: application/json
+
+{
+  "type": "vip",
+  "price": 5000,
+  "quantity": 100,
+  "sales_start": "2026-02-01T00:00:00Z",
+  "sales_end": "2026-02-10T23:59:59Z"
+}
