@@ -1,8 +1,8 @@
 package dto
 
 const (
-	DefaultPage      = 1
-	DefaultLimit     = 10
+	DefaultPage  = 1
+	DefaultLimit = 10
 )
 
 type EventListQuery struct {
