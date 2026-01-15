@@ -5,8 +5,6 @@ import (
 	"event-service/internal/dto"
 	"event-service/internal/models"
 	"event-service/internal/repository"
-
-	"gorm.io/gorm"
 )
 
 type CategoryService interface {
@@ -31,7 +29,7 @@ func (s *categoryService) CreateCategory(req dto.CreateCategoryRequest) (*models
 
 	existing, err := s.categoryRepo.GetByName(req.Name)
 	if err != nil {
-		if !errors.Is(err, gorm.ErrRecordNotFound) {
+		if !errors.Is(err, dto.ErrCategoryNotFound) {
 			return nil, err
 		}
 	} else if existing != nil {
