@@ -22,11 +22,6 @@ func main() {
 
 	db := config.Connect(logger)
 
-	if err := db.AutoMigrate(); err != nil {
-		logger.Error("failed to migrate database", "error", err)
-		os.Exit(1)
-	}
-
 	port := os.Getenv("SERVICE_PORT")
 	if port == "" {
 		port = "8082"
