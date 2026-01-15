@@ -32,7 +32,7 @@ func main() {
 	notRepo := repository.NewNotificationRepo(db, log)
 	notService := services.NewNotifictaonService(notRepo, log)
 
-	consumer := kafka.NewConsumer(kafka.KafkaBrokers(), notService, log)
+	consumer := kafka.NewConsumer(config.KafkaBrokers(), notService, log)
 	go consumer.Start()
 
 

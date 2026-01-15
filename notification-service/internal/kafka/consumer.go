@@ -81,10 +81,11 @@ func (c *Consumer) handleTicketPurchased(payload []byte) {
 	}
 
 	notification := &models.Notification{
-		UserID: evt.UserID,
-		Type:   string(dto.NotificationTypeTicket),
-		Title:  "Билет куплен",
-		Body:   fmt.Sprintf("Ты успешно приобрёл билет на %s", evt.EventTitle),
+		UserID:  evt.UserID,
+		EventID: evt.EventID,
+		Type:    string(dto.NotificationTypeTicket),
+		Title:   "Билет куплен",
+		Body:    fmt.Sprintf("Ты успешно приобрёл билет на %s", evt.EventTitle),
 	}
 
 	if err := c.srv.CreateNotificationInternal(notification); err != nil {
@@ -95,16 +96,17 @@ func (c *Consumer) handleTicketPurchased(payload []byte) {
 func (c *Consumer) handleEventCancelled(payload []byte) {
 	var evt dto.EventCancelledEvent
 	if err := json.Unmarshal(payload, &evt); err != nil {
-		c.log.Error("failed to unmarshal event cancelled:", err)
+		c.log.Error("failed to unmarshal event reminder:", err)
 		return
 	}
 
 	for _, userID := range evt.UserIDs {
 		notification := &models.Notification{
-			UserID: userID,
-			Type:   string(dto.NotificationTypeEvent),
-			Title:  "Мероприятие отменено",
-			Body:   fmt.Sprintf("Мероприятие %s отменено", evt.EventTitle),
+			UserID:  userID,
+			EventID: evt.EventID,
+			Type:  string(dto.NotificationTypeEvent),
+			Title: "Мероприятие отменено",
+			Body:  fmt.Sprintf("Мероприятие %s отменено", evt.EventTitle),
 		}
 		if err := c.srv.CreateNotificationInternal(notification); err != nil {
 			c.log.Error("failed to create  notification:", err)
@@ -120,10 +122,11 @@ func (c *Consumer) handleEventReminder(payload []byte) {
 
 	for _, userID := range evt.UserIDs {
 		notification := &models.Notification{
-			UserID: userID,
-			Type:   string(dto.NotificationTypeEvent),
-			Title:  "Напоминание о мероприятии",
-			Body:   fmt.Sprintf("Завтра состоится мероприятие %s", evt.EventTitle),
+			UserID:  userID,
+			EventID: evt.EventID,
+			Type:    string(dto.NotificationTypeReminder),
+			Title:   "Напоминание о мероприятии",
+			Body:    fmt.Sprintf("Завтра состоится мероприятие %s", evt.EventTitle),
 		}
 		if err := c.srv.CreateNotificationInternal(notification); err != nil {
 			c.log.Error("failed to create  notification:", err)
@@ -133,9 +136,4 @@ func (c *Consumer) handleEventReminder(payload []byte) {
 
 func (c *Consumer) Stop() {
 	c.cancel()
-}
-
-
-func KafkaBrokers() []string {
-	return []string{"localhost:9092"}
 }
