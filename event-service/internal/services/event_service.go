@@ -41,11 +41,9 @@ func (s *eventService) CreateEvent(req dto.CreateEventRequest) (*models.Event, e
 		}
 	}
 
-	req.Status = dto.Draft
-
 	event := &models.Event{
-		Title:      req.Title,
-		Status:     string(req.Status),
+		Title:      strings.TrimSpace(req.Title),
+		Status:     string(dto.Draft),
 		UserID:     req.UserID,
 		Seats:      req.Seats,
 		CategoryID: req.CategoryID,
@@ -91,6 +89,27 @@ func (s *eventService) UpdateEvent(req dto.UpdateEventRequest, id uint) (*models
 		event.Title = trimmed
 	}
 
+	if req.CategoryID != nil {
+		if *req.CategoryID < 1 {
+			return nil, dto.ErrNotCorrectID
+		}
+		event.CategoryID = req.CategoryID
+	}
+
+	if req.Seats != nil {
+		if *req.Seats < 1 {
+			return nil, dto.ErrNotCorrectNum
+		}
+		event.Seats = req.Seats
+	}
+
+	if req.UserID != nil {
+		if *req.UserID < 1 {
+			return nil, dto.ErrNotCorrectID
+		}
+		event.UserID = *req.UserID
+	}
+
 	if err := s.eventRepo.Update(event); err != nil {
 		return nil, err
 	}
@@ -105,6 +124,10 @@ func (s *eventService) PublishEvent(id uint) error {
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
 		return dto.ErrEventNotFound
+	}
+
+	if event.Status != string(dto.Draft) {
+		return dto.ErrEventIsNotDraft
 	}
 
 	event.Status = string(dto.Published)

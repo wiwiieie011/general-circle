@@ -9,16 +9,14 @@ const (
 )
 
 type CreateEventRequest struct {
-	Title      string `json:"title"`
-	Status     Status `json:"status"`
+	Title      string `json:"title" binding:"required"`
 	Seats      *int   `json:"seats"`
-	UserID     uint   `json:"user_id"`
+	UserID     uint   `json:"user_id" binding:"required"`
 	CategoryID *uint  `json:"category_id"`
 }
 
 type UpdateEventRequest struct {
 	Title      *string `json:"title"`
-	Status     *Status `json:"status"`
 	Seats      *int    `json:"seats"`
 	UserID     *uint   `json:"user_id"`
 	CategoryID *uint   `json:"category_id"`
