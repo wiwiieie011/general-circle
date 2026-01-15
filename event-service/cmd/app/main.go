@@ -3,7 +3,6 @@ package main
 import (
 	"event-service/internal/config"
 	"event-service/internal/models"
-	"event-service/internal/transport"
 	"log/slog"
 	"os"
 
@@ -37,7 +36,7 @@ func main() {
 	}
 
 	r := gin.Default()
-	transport.RegisterRoutes(r, logger, db)
+	//transport.RegisterRoutes(r, logger, db)
 
 	if err := r.Run(":" + port); err != nil {
 		logger.Error("не удалось запустить сервер: ", slog.Any("error", err))
