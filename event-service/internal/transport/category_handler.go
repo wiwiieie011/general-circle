@@ -14,7 +14,7 @@ type CategoryHandler struct {
 	service services.CategoryService
 }
 
-func NewCategoryService(service services.CategoryService) *CategoryHandler {
+func NewCategoryHandler(service services.CategoryService) *CategoryHandler {
 	return &CategoryHandler{service: service}
 }
 
@@ -51,7 +51,7 @@ func (h *CategoryHandler) Create(ctx *gin.Context) {
 func (h *CategoryHandler) GetByID(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный JSON"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *CategoryHandler) GetByID(ctx *gin.Context) {
 func (h *CategoryHandler) Delete(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный JSON"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
 

@@ -45,7 +45,7 @@ func (h *EventScheduleHandler) Create(ctx *gin.Context) {
 func (h *EventScheduleHandler) GetByID(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "неорректный ID"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
 

@@ -30,8 +30,8 @@ func (h *EventHandler) RegisterRoutes(r *gin.Engine) {
 		events.GET("/:id", h.GetByID)
 		events.PUT("/:id", h.Update)
 		events.DELETE("/:id", h.Delete)
-		events.POST("/:id", h.Publish)
-		events.POST("/:id", h.Cancel)
+		events.POST("/:id/publish", h.Publish)
+		events.POST("/:id/cancel", h.Cancel)
 	}
 }
 
@@ -127,13 +127,13 @@ func (h *EventHandler) Delete(ctx *gin.Context) {
 func (h *EventHandler) List(ctx *gin.Context) {
 	var query dto.EventListQuery
 
-	if pageStr := ctx.Param("page"); pageStr != "" {
+	if pageStr := ctx.Query("page"); pageStr != "" {
 		if page, err := strconv.Atoi(strings.TrimSpace(pageStr)); err == nil {
 			query.Page = page
 		}
 	}
 
-	if limitStr := ctx.Param("limit"); limitStr != "" {
+	if limitStr := ctx.Query("limit"); limitStr != "" {
 		if limit, err := strconv.Atoi(strings.TrimSpace(limitStr)); err == nil {
 			query.Limit = limit
 		}
@@ -179,7 +179,7 @@ func (h *EventHandler) Publish(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "event is succesfully published"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "event is successfully published"})
 }
 
 func (h *EventHandler) Cancel(ctx *gin.Context) {
