@@ -39,6 +39,7 @@ func (s *TicketTypeService) Create(
 	}
 
 	ticketType := &models.TicketType{
+		EventID:    uint64(eventId),
 		Type:       models.TicketTypeKind(requestDto.Type),
 		Price:      requestDto.Price,
 		Quantity:   int(requestDto.Quantity),

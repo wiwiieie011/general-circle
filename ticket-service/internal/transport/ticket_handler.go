@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -45,13 +46,20 @@ func (h *TicketHandler) CreateTicketType(c *gin.Context) {
 	var ttDto dto.CreateTicketTypeRequest
 	if err := c.ShouldBindJSON(&ttDto); err != nil {
 		h.logger.Error(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	ticketType, err := h.ticketTypeService.Create(ctx, uint(eventId), ttDto)
 	if err != nil {
 		h.logger.Error(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		switch {
+		case errors.Is(err, dto.ErrEventNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		case errors.Is(err, dto.ErrEventNotPublished):
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		}
 		return
 	}
 
