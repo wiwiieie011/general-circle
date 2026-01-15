@@ -93,9 +93,6 @@ func (s *eventService) UpdateEvent(req dto.UpdateEventRequest, id uint) (*models
 		if _, err := s.categoryRepo.GetByID(*req.CategoryID); err != nil {
 			return nil, dto.ErrCategoryNotFound
 		}
-		if *req.CategoryID < 1 {
-			return nil, dto.ErrNotCorrectID
-		}
 		event.CategoryID = req.CategoryID
 	}
 
@@ -107,9 +104,6 @@ func (s *eventService) UpdateEvent(req dto.UpdateEventRequest, id uint) (*models
 	}
 
 	if req.UserID != nil {
-		if *req.UserID < 1 {
-			return nil, dto.ErrNotCorrectID
-		}
 		event.UserID = *req.UserID
 	}
 
