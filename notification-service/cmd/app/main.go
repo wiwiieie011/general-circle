@@ -30,7 +30,7 @@ func main() {
 
 	log.Info("migrations completed")
 	notRepo := repository.NewNotificationRepo(db, log)
-	notService := services.NewNotifictaonService(notRepo, log)
+	notService := services.NewNotificationService(notRepo, log)
 
 	consumer := kafka.NewConsumer(config.KafkaBrokers(), notService, log)
 	go consumer.Start()
