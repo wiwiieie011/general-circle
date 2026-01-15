@@ -1,7 +1,9 @@
 package main
 
 import (
+	"log/slog"
 	"notification-service/internal/config"
+	"notification-service/internal/kafka"
 	"notification-service/internal/models"
 	"notification-service/internal/repository"
 	"notification-service/internal/services"
@@ -30,11 +32,23 @@ func main() {
 	notRepo := repository.NewNotificationRepo(db, log)
 	notService := services.NewNotifictaonService(notRepo, log)
 
-	httpServer := gin.Default()
+	consumer := kafka.NewConsumer(config.KafkaBrokers(), notService, log)
+	go consumer.Start()
 
+
+	httpServer:= gin.Default()
 	transport.RegisterRoutes(
 		httpServer,
 		log,
 		notService,
 	)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	if err := httpServer.Run(":" + port); err != nil {
+		log.Error("не удалось запустить сервер", slog.Any("error", err))
+	}
 }

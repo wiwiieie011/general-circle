@@ -8,7 +8,6 @@ type UpdateNotificationPreferencesRequest struct {
 	InAppEnabled    *bool `json:"in_app_enabled"`
 }
 
-
 type NotificationType string
 
 const (
@@ -17,4 +16,20 @@ const (
 	NotificationTypeReminder NotificationType = "reminder"
 )
 
+type TicketPurchasedEvent struct {
+	UserID     uint   `json:"user_id"`
+	EventID    uint   `json:"event_id"`
+	EventTitle string `json:"event_title"`
+}
 
+type EventCancelledEvent struct {
+	EventID    uint   `json:"event_id"`
+	EventTitle string `json:"event_title"`
+	UserIDs    []uint `json:"user_ids"` // всех владельцев билетов
+}
+
+type EventReminder struct {
+	EventID    uint   `json:"event_id"`
+	EventTitle string `json:"event_title"`
+	UserIDs    []uint `json:"user_ids"` // всех владельцев билетов
+}

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"log/slog"
 	"notification-service/internal/dto"
 	"notification-service/internal/models"
@@ -9,6 +10,7 @@ import (
 )
 
 type NotificationRepo interface {
+	Create(notification *models.Notification) error
 	GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error)
 	AllRead(userID uint) error
 	ReadNotificationsByID(userID, id uint) error
@@ -29,6 +31,22 @@ func NewNotificationRepo(db *gorm.DB, log *slog.Logger) NotificationRepo {
 		log: log,
 	}
 }
+
+func (r *notificationRepo) Create(notification *models.Notification) error {
+
+   err:= r.db.Create(notification).Error
+
+   if err != nil {
+	if errors.Is(err,gorm.ErrDuplicatedKey) {
+		return  nil
+	}
+
+	return  err
+   }
+
+   return nil
+}
+
 
 func (r *notificationRepo) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
 	var nots []models.Notification
