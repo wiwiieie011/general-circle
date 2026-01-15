@@ -64,7 +64,7 @@ func (r *notificationRepo) GetNotifications(userID uint, limit int, lastID uint)
 
 	if err := q.Find(&nots).Error; err != nil {
 		r.log.Error("failed to get notifications", "error", err, "userID", userID, "limit", limit, "lastID", lastID)
-		return []models.Notification{}, nil
+		return nil, err
 	}
 
 	r.log.Info("notifications retrieved successfully", "userID", userID, "count", len(nots))
