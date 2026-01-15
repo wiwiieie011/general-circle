@@ -34,7 +34,7 @@ func (s *eventScheduleService) CreateSchedule(req dto.CreateScheduleRequest) (*m
 		return nil, dto.ErrEmptySpeaker
 	}
 
-	if req.StartAt.After(req.EndAt) {
+	if !req.StartAt.Before(req.EndAt) {
 		return nil, dto.ErrNotCorrectScheduleTime 
 	}
 

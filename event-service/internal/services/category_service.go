@@ -31,7 +31,7 @@ func (s *categoryService) CreateCategory(req dto.CreateCategoryRequest) (*models
 
 	existing, err := s.categoryRepo.GetByName(req.Name)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, err
 		}
 	} else if existing != nil {

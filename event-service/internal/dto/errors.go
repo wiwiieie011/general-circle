@@ -17,6 +17,6 @@ var (
 	ErrEmptyActivityName      = errors.New("activity name cannot be empty")
 	ErrNotCorrectID           = errors.New("id cannot be less than 1")
 	ErrEmptySpeaker           = errors.New("speaker cannot be empty")
-	ErrNotCorrectScheduleTime = errors.New("start time cannot be after end time and vice versa")
+	ErrNotCorrectScheduleTime = errors.New("start time cannot be equal and after end time and vice versa")
 	ErrNotCorrectNum          = errors.New("number cannot be less than 1")
 )
