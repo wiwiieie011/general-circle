@@ -21,7 +21,7 @@ func NewEventClient(baseURL string) *EventClient {
 	}
 }
 
-func (c *EventClient) GetEvent(ctx context.Context, eventId uint) (*dto_api.EventResponse, error) {
+func (c *EventClient) GetEvent(ctx context.Context, eventId uint64) (*dto_api.EventResponse, error) {
 	url := fmt.Sprintf("%s/event/%d", c.baseURL, eventId)
 
 	req, err := http.NewRequestWithContext(

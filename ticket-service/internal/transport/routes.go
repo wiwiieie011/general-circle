@@ -17,6 +17,11 @@ func RegisterRoutes(
 	db *gorm.DB,
 ) {
 	eventClientBaseUrl := os.Getenv("EVENT_SERVICE_BASE_URL")
+	if eventClientBaseUrl == "" {
+		logger.Error("cannot resolve env param: EVENT_SERVICE_BASE_URL")
+		os.Exit(1)
+	}
+
 	eventClient := api_http.NewEventClient(eventClientBaseUrl)
 	ticketTypeRepo := repository.NewTicketTypeRepository(db)
 	ticketTypeService := services.NewTicketTypeService(eventClient, ticketTypeRepo)

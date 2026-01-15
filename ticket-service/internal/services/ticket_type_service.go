@@ -26,7 +26,7 @@ func NewTicketTypeService(
 
 func (s *TicketTypeService) Create(
 	ctx context.Context,
-	eventId uint,
+	eventId uint64,
 	requestDto dto.CreateTicketTypeRequest,
 ) (*models.TicketType, error) {
 	eventResp, err := s.eventClient.GetEvent(ctx, eventId)
@@ -39,7 +39,7 @@ func (s *TicketTypeService) Create(
 	}
 
 	ticketType := &models.TicketType{
-		EventID:    uint64(eventId),
+		EventID:    eventId,
 		Type:       models.TicketTypeKind(requestDto.Type),
 		Price:      requestDto.Price,
 		Quantity:   int(requestDto.Quantity),

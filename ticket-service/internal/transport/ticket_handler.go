@@ -37,9 +37,8 @@ func (h *TicketHandler) Ping(c *gin.Context) {
 
 func (h *TicketHandler) CreateTicketType(c *gin.Context) {
 	ctx := c.Request.Context()
-	idStr := c.Param("id")
-	eventId, err := strconv.ParseUint(idStr, 10, 32)
-	if err != nil {
+	eventId, err := strconv.Atoi(c.Param("id"))
+	if err != nil || eventId < 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
 		return
 	}
@@ -49,7 +48,7 @@ func (h *TicketHandler) CreateTicketType(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	ticketType, err := h.ticketTypeService.Create(ctx, uint(eventId), ttDto)
+	ticketType, err := h.ticketTypeService.Create(ctx, uint64(eventId), ttDto)
 	if err != nil {
 		h.logger.Error(err.Error())
 		switch {

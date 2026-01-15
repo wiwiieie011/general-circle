@@ -12,7 +12,7 @@ const (
 type Ticket struct {
 	Base
 	EventID      uint64       `gorm:"not null"`
-	TicketTypeID uint64       `gorm:"not null"`
+	TicketTypeID uint         `gorm:"not null"`
 	TicketType   TicketType   `gorm:"foreignKey:TicketTypeID;references:ID"`
 	UserID       uint64       `gorm:"not null"`
 	Code         string       `gorm:"type:varchar(64);not null;uniqueIndex"`
