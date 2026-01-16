@@ -33,6 +33,8 @@ func (h *EventHandler) RegisterRoutes(r *gin.Engine) {
 		events.POST("/:id/publish", h.Publish)
 		events.POST("/:id/cancel", h.Cancel)
 	}
+
+	r.GET("users/:id/events")
 }
 
 func (h *EventHandler) Ping(ctx *gin.Context) {
@@ -204,4 +206,20 @@ func (h *EventHandler) Cancel(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "event is cancelled"})
+}
+
+func (h *EventHandler) GetByUserID(ctx *gin.Context) {
+	userID, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	events, err := h.service.GetEventsByUserID(uint(userID))
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, events)
 }

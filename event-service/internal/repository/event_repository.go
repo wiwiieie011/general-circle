@@ -14,6 +14,7 @@ type EventRepository interface {
 	Update(event *models.Event) error
 	Delete(id uint) error
 	List(query dto.EventListQuery) ([]models.Event, error)
+	GetByUserID(userID uint) ([]models.Event, error)
 }
 
 type gormEventRepository struct {
@@ -107,5 +108,19 @@ func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, er
 		Find(&events).Error; err != nil {
 		return nil, err
 	}
+	return events, nil
+}
+
+func (r *gormEventRepository) GetByUserID(userID uint) ([]models.Event, error) {
+	var events []models.Event
+
+	if err := r.db.Where("user_id = ?", userID).
+		Preload("Category").
+		Preload("Schedule").
+		Order("created_at DESC").
+		Find(&events).Error; err != nil {
+		return nil, err
+	}
+
 	return events, nil
 }

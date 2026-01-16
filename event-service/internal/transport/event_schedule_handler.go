@@ -19,22 +19,32 @@ func NewEventScheduleHandler(service services.EventScheduleService) *EventSchedu
 }
 
 func (h *EventScheduleHandler) RegisterRoutes(r *gin.Engine) {
-	schedules := r.Group("/schedules")
+	schedules := r.Group("/events/:id/schedule")
 	{
 		schedules.POST("", h.Create)
-		schedules.GET("/:id", h.GetByID)
+		schedules.GET("", h.GetByEventID)
 	}
 }
 
 func (h *EventScheduleHandler) Create(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
+		return
+	}
+
 	var req dto.CreateScheduleRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный JSON"})
 		return
 	}
 
-	schedule, err := h.service.CreateSchedule(req)
+	schedule, err := h.service.CreateScheduleForEvent(uint(id), req)
 	if err != nil {
+		if errors.Is(err, dto.ErrEventNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			return
+		}
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -42,16 +52,16 @@ func (h *EventScheduleHandler) Create(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, schedule)
 }
 
-func (h *EventScheduleHandler) GetByID(ctx *gin.Context) {
+func (h *EventScheduleHandler) GetByEventID(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
 
-	schedule, err := h.service.GetSchedule(uint(id))
+	schedules, err := h.service.GetScheduleByEventID(uint(id))
 	if err != nil {
-		if errors.Is(err, dto.ErrEventScheduleNotFound) {
+		if errors.Is(err, dto.ErrEventNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
@@ -59,5 +69,5 @@ func (h *EventScheduleHandler) GetByID(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, schedule)
+	ctx.JSON(http.StatusOK, schedules)
 }

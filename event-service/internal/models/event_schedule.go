@@ -8,7 +8,7 @@ import (
 
 type EventSchedule struct {
 	gorm.Model
-	EventID      uint      `json:"event_id" gorm:"uniqueIndex"`
+	EventID      uint      `json:"event_id"`
 	ActivityName string    `json:"activity_name"`
 	Speaker      string    `json:"speaker"`
 	StartAt      time.Time `json:"start_at"`

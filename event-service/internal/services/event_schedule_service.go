@@ -7,12 +7,13 @@ import (
 )
 
 type EventScheduleService interface {
-	CreateSchedule(req dto.CreateScheduleRequest) (*models.EventSchedule, error)
-	GetSchedule(id uint) (*models.EventSchedule, error)
+	GetScheduleByEventID(eventID uint) ([]models.EventSchedule, error)
+	CreateScheduleForEvent(eventID uint, req dto.CreateScheduleRequest) (*models.EventSchedule, error)
 }
 
 type eventScheduleService struct {
 	eventScheduleRepo repository.EventScheduleRepository
+	eventRepo         repository.EventRepository
 }
 
 func NewEventScheduleService(
@@ -21,13 +22,27 @@ func NewEventScheduleService(
 	return &eventScheduleService{eventScheduleRepo: eventScheduleRepo}
 }
 
-func (s *eventScheduleService) CreateSchedule(req dto.CreateScheduleRequest) (*models.EventSchedule, error) {
-	if req.ActivityName == "" {
-		return nil, dto.ErrEmptyActivityName
+func (s *eventScheduleService) GetScheduleByEventID(eventID uint) ([]models.EventSchedule, error) {
+	if _, err := s.eventRepo.GetByID(eventID); err != nil {
+		return nil, dto.ErrEventNotFound
 	}
 
-	if req.EventID < 1 {
-		return nil, dto.ErrNotCorrectID
+	schedules, err := s.eventScheduleRepo.GetByEventID(eventID)
+	if err != nil {
+		return nil, err
+	}
+	return schedules, nil
+}
+
+func (s *eventScheduleService) CreateScheduleForEvent(
+	eventID uint,
+	req dto.CreateScheduleRequest,
+) (*models.EventSchedule, error) {
+	if _, err := s.eventRepo.GetByID(eventID); err != nil {
+		return nil, dto.ErrEventNotFound
+	}
+	if req.ActivityName == "" {
+		return nil, dto.ErrEmptyActivityName
 	}
 
 	if req.Speaker == "" {
@@ -39,7 +54,6 @@ func (s *eventScheduleService) CreateSchedule(req dto.CreateScheduleRequest) (*m
 	}
 
 	schedule := &models.EventSchedule{
-		EventID:      req.EventID,
 		ActivityName: req.ActivityName,
 		Speaker:      req.Speaker,
 		StartAt:      req.StartAt,
@@ -49,13 +63,6 @@ func (s *eventScheduleService) CreateSchedule(req dto.CreateScheduleRequest) (*m
 	if err := s.eventScheduleRepo.Create(schedule); err != nil {
 		return nil, err
 	}
-	return schedule, nil
-}
 
-func (s *eventScheduleService) GetSchedule(id uint) (*models.EventSchedule, error) {
-	schedule, err := s.eventScheduleRepo.GetByID(id)
-	if err != nil {
-		return nil, dto.ErrEventScheduleNotFound
-	}
 	return schedule, nil
 }
