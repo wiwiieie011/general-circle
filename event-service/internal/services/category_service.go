@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"event-service/internal/dto"
+	e "event-service/internal/errors"
 	"event-service/internal/models"
 	"event-service/internal/repository"
 )
@@ -24,16 +25,16 @@ func NewCategoryService(categoryRepo repository.CategoryRepository) CategoryServ
 
 func (s *categoryService) CreateCategory(req dto.CreateCategoryRequest) (*models.Category, error) {
 	if req.Name == "" {
-		return nil, dto.ErrEmptyName
+		return nil, e.ErrEmptyName
 	}
 
 	existing, err := s.categoryRepo.GetByName(req.Name)
 	if err != nil {
-		if !errors.Is(err, dto.ErrCategoryNotFound) {
+		if !errors.Is(err, e.ErrCategoryNotFound) {
 			return nil, err
 		}
 	} else if existing != nil {
-		return nil, dto.ErrCategoryNameExists
+		return nil, e.ErrCategoryNameExists
 	}
 
 	category := &models.Category{
@@ -49,14 +50,14 @@ func (s *categoryService) CreateCategory(req dto.CreateCategoryRequest) (*models
 func (s *categoryService) GetCategory(id uint) (*models.Category, error) {
 	category, err := s.categoryRepo.GetByID(id)
 	if err != nil {
-		return nil, dto.ErrCategoryNotFound
+		return nil, e.ErrCategoryNotFound
 	}
 	return category, nil
 }
 
 func (s *categoryService) DeleteCategory(id uint) error {
 	if _, err := s.categoryRepo.GetByID(id); err != nil {
-		return dto.ErrCategoryNotFound
+		return e.ErrCategoryNotFound
 	}
 	return s.categoryRepo.Delete(id)
 }

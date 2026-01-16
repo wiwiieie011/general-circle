@@ -2,15 +2,14 @@ package models
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type EventSchedule struct {
-	gorm.Model
-	EventID      uint      `json:"event_id"`
-	ActivityName string    `json:"activity_name"`
-	Speaker      string    `json:"speaker"`
-	StartAt      time.Time `json:"start_at"`
-	EndAt        time.Time `json:"end_at"`
+	Base
+	EventID      uint      `json:"event_id" gorm:"not null;index"`
+	Event        Event     `json:"-" gorm:"foreignKey:EventID"`
+	ActivityName string    `json:"activity_name" gorm:"type:varchar(100);not null"`
+	Speaker      string    `json:"speaker" gorm:"type:varchar(50);not null"`
+	StartAt      time.Time `json:"start_at" gorm:"not null"`
+	EndAt        time.Time `json:"end_at" gorm:"not null"`
 }

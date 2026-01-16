@@ -3,6 +3,7 @@ package transport
 import (
 	"errors"
 	"event-service/internal/dto"
+	e "event-service/internal/errors"
 	"event-service/internal/services"
 	"net/http"
 	"strconv"
@@ -41,7 +42,7 @@ func (h *EventScheduleHandler) Create(ctx *gin.Context) {
 
 	schedule, err := h.service.CreateScheduleForEvent(uint(id), req)
 	if err != nil {
-		if errors.Is(err, dto.ErrEventNotFound) {
+		if errors.Is(err, e.ErrEventNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
@@ -61,7 +62,7 @@ func (h *EventScheduleHandler) GetByEventID(ctx *gin.Context) {
 
 	schedules, err := h.service.GetScheduleByEventID(uint(id))
 	if err != nil {
-		if errors.Is(err, dto.ErrEventNotFound) {
+		if errors.Is(err, e.ErrEventNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}

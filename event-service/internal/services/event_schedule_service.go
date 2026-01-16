@@ -2,6 +2,7 @@ package services
 
 import (
 	"event-service/internal/dto"
+	e "event-service/internal/errors"
 	"event-service/internal/models"
 	"event-service/internal/repository"
 )
@@ -20,12 +21,15 @@ func NewEventScheduleService(
 	eventScheduleRepo repository.EventScheduleRepository,
 	eventRepo repository.EventRepository,
 ) EventScheduleService {
-	return &eventScheduleService{eventScheduleRepo: eventScheduleRepo}
+	return &eventScheduleService{
+		eventScheduleRepo: eventScheduleRepo,
+		eventRepo:         eventRepo,
+	}
 }
 
 func (s *eventScheduleService) GetScheduleByEventID(eventID uint) ([]models.EventSchedule, error) {
 	if _, err := s.eventRepo.GetByID(eventID); err != nil {
-		return nil, dto.ErrEventNotFound
+		return nil, e.ErrEventNotFound
 	}
 
 	schedules, err := s.eventScheduleRepo.GetByEventID(eventID)
@@ -40,18 +44,18 @@ func (s *eventScheduleService) CreateScheduleForEvent(
 	req dto.CreateScheduleRequest,
 ) (*models.EventSchedule, error) {
 	if _, err := s.eventRepo.GetByID(eventID); err != nil {
-		return nil, dto.ErrEventNotFound
+		return nil, e.ErrEventNotFound
 	}
 	if req.ActivityName == "" {
-		return nil, dto.ErrEmptyActivityName
+		return nil, e.ErrEmptyActivityName
 	}
 
 	if req.Speaker == "" {
-		return nil, dto.ErrEmptySpeaker
+		return nil, e.ErrEmptySpeaker
 	}
 
 	if !req.StartAt.Before(req.EndAt) {
-		return nil, dto.ErrNotCorrectScheduleTime
+		return nil, e.ErrNotCorrectScheduleTime
 	}
 
 	schedule := &models.EventSchedule{

@@ -5,15 +5,20 @@ import (
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 func RegisterRoutes(
 	router *gin.Engine,
 	log *slog.Logger,
-	db *gorm.DB,
 	eventService services.EventService,
+	scheduleService services.EventScheduleService,
+	categoryService services.CategoryService,
 ) {
 	eventHandler := NewEventHandler(eventService)
+	scheduleHandler := NewEventScheduleHandler(scheduleService)
+	categoryHandler := NewCategoryHandler(categoryService)
+
 	eventHandler.RegisterRoutes(router)
+	scheduleHandler.RegisterRoutes(router)
+	categoryHandler.RegisterRoutes(router)
 }

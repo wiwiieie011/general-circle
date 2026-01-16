@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"event-service/internal/dto"
+	e "event-service/internal/errors"
 	"event-service/internal/models"
 
 	"gorm.io/gorm"
@@ -23,7 +23,7 @@ func NewEventScheduleRepository(db *gorm.DB) EventScheduleRepository {
 
 func (r *gormScheduleRepository) Create(schedule *models.EventSchedule) error {
 	if schedule == nil {
-		return dto.ErrEventScheduleIsNil
+		return e.ErrEventScheduleIsNil
 	}
 	return r.db.Create(schedule).Error
 }
@@ -31,7 +31,7 @@ func (r *gormScheduleRepository) Create(schedule *models.EventSchedule) error {
 func (r *gormScheduleRepository) GetByID(id uint) (*models.EventSchedule, error) {
 	var schedule models.EventSchedule
 
-	if err := r.db.First(&schedule, id).Error; err != nil {
+	if err := r.db.Preload("Event").First(&schedule, id).Error; err != nil {
 		return nil, err
 	}
 	return &schedule, nil
@@ -41,6 +41,7 @@ func (r *gormScheduleRepository) GetByEventID(eventID uint) ([]models.EventSched
 	var schedules []models.EventSchedule
 
 	if err := r.db.Where("event_id = ?", eventID).
+		Preload("Event").
 		Find(&schedules).Error; err != nil {
 		return nil, err
 	}
