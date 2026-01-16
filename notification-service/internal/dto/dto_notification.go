@@ -1,10 +1,5 @@
 package dto
 
-import (
-	"time"
-
-	"gorm.io/gorm"
-)
 
 type UpdateNotificationPreferencesRequest struct {
 	TicketPurchased *bool `json:"ticket_purchased"`
@@ -40,9 +35,4 @@ type EventReminder struct {
 	UserIDs    []uint `json:"user_ids"` // всех владельцев билетов
 }
 
-type Model struct {
-	ID        uint           `gorm:"primarykey" json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at,omitempty"`
-}
+

@@ -147,7 +147,7 @@ func (r *notificationRepo) GetNotificationPreferences(userID uint) (*models.Noti
 		"notification preferences loaded",
 		"user_id", userID,
 	)
-	return &pref, err
+	return &pref, nil
 }
 
 func (r *notificationRepo) UpdateNotificationPreferences(pref *models.NotificationPreference) error {
