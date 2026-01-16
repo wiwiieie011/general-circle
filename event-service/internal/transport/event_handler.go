@@ -3,12 +3,12 @@ package transport
 import (
 	"errors"
 	"event-service/internal/dto"
+	e "event-service/internal/errors"
 	"event-service/internal/services"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/gin-gonic/gin"
 )
 
 type EventHandler struct {
@@ -66,7 +66,7 @@ func (h *EventHandler) GetByID(ctx *gin.Context) {
 
 	event, err := h.service.GetEvent(uint(id))
 	if err != nil {
-		if errors.Is(err, dto.ErrEventNotFound) {
+		if errors.Is(err, e.ErrEventNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
@@ -92,7 +92,7 @@ func (h *EventHandler) Update(ctx *gin.Context) {
 
 	event, err := h.service.UpdateEvent(req, uint(id))
 	if err != nil {
-		if errors.Is(err, dto.ErrEventNotFound) {
+		if errors.Is(err, e.ErrEventNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
@@ -111,11 +111,11 @@ func (h *EventHandler) Delete(ctx *gin.Context) {
 	}
 
 	if err := h.service.DeleteEvent(uint(id)); err != nil {
-		if errors.Is(err, dto.ErrEventNotFound) {
+		if errors.Is(err, e.ErrEventNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		if errors.Is(err, dto.ErrEventIsNotDraft) {
+		if errors.Is(err, e.ErrEventIsNotDraft) {
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}
@@ -169,11 +169,11 @@ func (h *EventHandler) Publish(ctx *gin.Context) {
 
 	err = h.service.PublishEvent(uint(id))
 	if err != nil {
-		if errors.Is(err, dto.ErrEventNotFound) {
+		if errors.Is(err, e.ErrEventNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		if errors.Is(err, dto.ErrEventIsNotDraft) {
+		if errors.Is(err, e.ErrEventIsNotDraft) {
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}
@@ -193,11 +193,11 @@ func (h *EventHandler) Cancel(ctx *gin.Context) {
 
 	err = h.service.CancelEvent(uint(id))
 	if err != nil {
-		if errors.Is(err, dto.ErrEventNotFound) {
+		if errors.Is(err, e.ErrEventNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		if errors.Is(err, dto.ErrEventIsNotPublished) {
+		if errors.Is(err, e.ErrEventIsNotPublished) {
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}

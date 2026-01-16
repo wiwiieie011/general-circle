@@ -3,11 +3,11 @@ package transport
 import (
 	"errors"
 	"event-service/internal/dto"
+	e "event-service/internal/errors"
 	"event-service/internal/services"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-
-	"github.com/gin-gonic/gin"
 )
 
 type CategoryHandler struct {
@@ -37,7 +37,7 @@ func (h *CategoryHandler) Create(ctx *gin.Context) {
 
 	category, err := h.service.CreateCategory(req)
 	if err != nil {
-		if errors.Is(err, dto.ErrCategoryNameExists) {
+		if errors.Is(err, e.ErrCategoryNameExists) {
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}
@@ -57,7 +57,7 @@ func (h *CategoryHandler) GetByID(ctx *gin.Context) {
 
 	category, err := h.service.GetCategory(uint(id))
 	if err != nil {
-		if errors.Is(err, dto.ErrCategoryNotFound) {
+		if errors.Is(err, e.ErrCategoryNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
@@ -76,7 +76,7 @@ func (h *CategoryHandler) Delete(ctx *gin.Context) {
 	}
 
 	if err := h.service.DeleteCategory(uint(id)); err != nil {
-		if errors.Is(err, dto.ErrCategoryNotFound) {
+		if errors.Is(err, e.ErrCategoryNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}

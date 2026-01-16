@@ -2,10 +2,10 @@ package repository
 
 import (
 	"event-service/internal/dto"
+	e "event-service/internal/errors"
 	"event-service/internal/models"
-	"strings"
-
 	"gorm.io/gorm"
+	"strings"
 )
 
 type EventRepository interface {
@@ -27,7 +27,7 @@ func NewEventRepository(db *gorm.DB) EventRepository {
 
 func (r *gormEventRepository) Create(event *models.Event) error {
 	if event == nil {
-		return dto.ErrEventIsNil
+		return e.ErrEventIsNil
 	}
 	return r.db.Create(event).Error
 }
@@ -45,7 +45,7 @@ func (r *gormEventRepository) GetByID(id uint) (*models.Event, error) {
 
 func (r *gormEventRepository) Update(event *models.Event) error {
 	if event == nil {
-		return dto.ErrEventIsNil
+		return e.ErrEventIsNil
 	}
 	return r.db.Save(event).Error
 }

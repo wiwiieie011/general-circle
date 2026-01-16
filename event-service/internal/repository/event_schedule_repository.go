@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"event-service/internal/dto"
+	e "event-service/internal/errors"
 	"event-service/internal/models"
 
 	"gorm.io/gorm"
@@ -23,7 +23,7 @@ func NewEventScheduleRepository(db *gorm.DB) EventScheduleRepository {
 
 func (r *gormScheduleRepository) Create(schedule *models.EventSchedule) error {
 	if schedule == nil {
-		return dto.ErrEventScheduleIsNil
+		return e.ErrEventScheduleIsNil
 	}
 	return r.db.Create(schedule).Error
 }

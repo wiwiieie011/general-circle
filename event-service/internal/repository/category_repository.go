@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"event-service/internal/dto"
 	"event-service/internal/models"
+
+	e "event-service/internal/errors"
 
 	"gorm.io/gorm"
 )
@@ -25,7 +26,7 @@ func NewCategoryRepository(db *gorm.DB) CategoryRepository {
 
 func (r *gormCategoryRepository) Create(category *models.Category) error {
 	if category == nil {
-		return dto.ErrCategoryIsNil
+		return e.ErrCategoryIsNil
 	}
 	return r.db.Create(category).Error
 }

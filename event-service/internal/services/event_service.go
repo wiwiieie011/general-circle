@@ -2,6 +2,7 @@ package services
 
 import (
 	"event-service/internal/dto"
+	e "event-service/internal/errors"
 	"event-service/internal/models"
 	"event-service/internal/repository"
 	"strings"
@@ -31,14 +32,10 @@ func NewEventService(
 }
 
 func (s *eventService) CreateEvent(req dto.CreateEventRequest) (*models.Event, error) {
-	if req.Title == "" {
-		return nil, dto.ErrEmptyTitle
-	}
-
 	if req.CategoryID != nil {
 		_, err := s.categoryRepo.GetByID(*req.CategoryID)
 		if err != nil {
-			return nil, dto.ErrCategoryNotFound
+			return nil, e.ErrCategoryNotFound
 		}
 	}
 
@@ -59,7 +56,7 @@ func (s *eventService) CreateEvent(req dto.CreateEventRequest) (*models.Event, e
 func (s *eventService) GetEvent(id uint) (*models.Event, error) {
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
-		return nil, dto.ErrEventNotFound
+		return nil, e.ErrEventNotFound
 	}
 	return event, nil
 }
@@ -67,11 +64,11 @@ func (s *eventService) GetEvent(id uint) (*models.Event, error) {
 func (s *eventService) DeleteEvent(id uint) error {
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
-		return dto.ErrEventNotFound
+		return e.ErrEventNotFound
 	}
 
 	if event.Status != string(dto.Draft) {
-		return dto.ErrEventIsNotDraft
+		return e.ErrEventIsNotDraft
 	}
 	return s.eventRepo.Delete(id)
 }
@@ -79,27 +76,27 @@ func (s *eventService) DeleteEvent(id uint) error {
 func (s *eventService) UpdateEvent(req dto.UpdateEventRequest, id uint) (*models.Event, error) {
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
-		return nil, dto.ErrEventNotFound
+		return nil, e.ErrEventNotFound
 	}
 
 	if req.Title != nil {
 		trimmed := strings.TrimSpace(*req.Title)
 		if trimmed == "" {
-			return nil, dto.ErrEmptyTitle
+			return nil, e.ErrEmptyTitle
 		}
 		event.Title = trimmed
 	}
 
 	if req.CategoryID != nil {
 		if _, err := s.categoryRepo.GetByID(*req.CategoryID); err != nil {
-			return nil, dto.ErrCategoryNotFound
+			return nil, e.ErrCategoryNotFound
 		}
 		event.CategoryID = req.CategoryID
 	}
 
 	if req.Seats != nil {
 		if *req.Seats < 1 {
-			return nil, dto.ErrNotCorrectNum
+			return nil, e.ErrNotCorrectNum
 		}
 		event.Seats = req.Seats
 	}
@@ -121,11 +118,11 @@ func (s *eventService) ListEvents(query dto.EventListQuery) ([]models.Event, err
 func (s *eventService) PublishEvent(id uint) error {
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
-		return dto.ErrEventNotFound
+		return e.ErrEventNotFound
 	}
 
 	if event.Status != string(dto.Draft) {
-		return dto.ErrEventIsNotDraft
+		return e.ErrEventIsNotDraft
 	}
 
 	event.Status = string(dto.Published)
@@ -136,11 +133,11 @@ func (s *eventService) PublishEvent(id uint) error {
 func (s *eventService) CancelEvent(id uint) error {
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
-		return dto.ErrEventNotFound
+		return e.ErrEventNotFound
 	}
 
 	if event.Status != string(dto.Published) {
-		return dto.ErrEventIsNotPublished
+		return e.ErrEventIsNotPublished
 	}
 
 	event.Status = string(dto.Cancelled)

@@ -9,7 +9,7 @@ const (
 )
 
 type CreateEventRequest struct {
-	Title      string `json:"title" binding:"required"`
+	Title      string `json:"title" binding:"required,min=5,max=100"`
 	Seats      *int   `json:"seats"`
 	UserID     uint   `json:"user_id" binding:"required"`
 	CategoryID *uint  `json:"category_id"`
