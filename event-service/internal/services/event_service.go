@@ -15,6 +15,7 @@ type EventService interface {
 	ListEvents(query dto.EventListQuery) ([]models.Event, error)
 	PublishEvent(id uint) error
 	CancelEvent(id uint) error
+	GetEventsByUserID(userID uint) ([]models.Event, error)
 }
 
 type eventService struct {
@@ -145,4 +146,8 @@ func (s *eventService) CancelEvent(id uint) error {
 	event.Status = string(dto.Cancelled)
 
 	return s.eventRepo.Update(event)
+}
+
+func (s *eventService) GetEventsByUserID(userID uint) ([]models.Event, error) {
+	return s.eventRepo.GetByUserID(userID)
 }
