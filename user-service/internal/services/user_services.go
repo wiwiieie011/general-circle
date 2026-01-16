@@ -26,6 +26,16 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 }
 
 func (s *userService) Register(email, password, firstName, lastName string) (*models.User, error) {
+_, err := s.userRepo.GetByEmail(email)
+if err == nil {
+	return nil, errors.New("пользователь с таким email уже существует")
+}
+
+if !errors.Is(err, gorm.ErrRecordNotFound) {
+	return nil, err
+}
+
+
 	hashedPassword, err := bcrypt.GenerateFromPassword(
 		[]byte(password),
 		bcrypt.DefaultCost,
