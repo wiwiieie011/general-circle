@@ -34,7 +34,7 @@ func (h *EventHandler) RegisterRoutes(r *gin.Engine) {
 		events.POST("/:id/cancel", h.Cancel)
 	}
 
-	r.GET("users/:id/events")
+	r.GET("users/:id/events", h.GetByUserID)
 }
 
 func (h *EventHandler) Ping(ctx *gin.Context) {

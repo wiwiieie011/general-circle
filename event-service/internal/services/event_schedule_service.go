@@ -18,6 +18,7 @@ type eventScheduleService struct {
 
 func NewEventScheduleService(
 	eventScheduleRepo repository.EventScheduleRepository,
+	eventRepo repository.EventRepository,
 ) EventScheduleService {
 	return &eventScheduleService{eventScheduleRepo: eventScheduleRepo}
 }
@@ -54,6 +55,7 @@ func (s *eventScheduleService) CreateScheduleForEvent(
 	}
 
 	schedule := &models.EventSchedule{
+		EventID:      eventID,
 		ActivityName: req.ActivityName,
 		Speaker:      req.Speaker,
 		StartAt:      req.StartAt,
