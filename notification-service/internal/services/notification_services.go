@@ -270,4 +270,3 @@ func (s *notificationService) Count(userID uint) (int64, error) {
 
 	return count, nil
 }
-

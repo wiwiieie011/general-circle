@@ -111,15 +111,43 @@ func (r *notificationRepo) DeleteNotificationsByID(userID, id uint) error {
 
 func (r *notificationRepo) GetNotificationPreferences(userID uint) (*models.NotificationPreference, error) {
 	var pref models.NotificationPreference
-	if err := r.db.
-		Where("user_id = ?", userID).
-		First(&pref).Error; err != nil {
-		r.log.Error("notification preferences not found", "error", err, "userID", userID)
-		return nil, dto.ErrNotificationPreferencesNotFound
+	err := r.db.Where("user_id = ?", userID).First(&pref).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// создаём дефолтные настройки
+		r.log.Warn(
+			"notification preferences not found, creating default",
+			"user_id", userID,
+		)
+		pref = models.NotificationPreference{
+			UserID:          userID,
+			TicketPurchased: true,
+			EventCanceled:   true,
+			EventReminder:   true,
+			PushEnabled:     true,
+			InAppEnabled:    true,
+		}
+		if err := r.db.Create(&pref).Error; err != nil {
+			r.log.Error(
+				"failed to create default notification preferences",
+				"user_id", userID,
+				"error", err,
+			)
+			return nil, err
+		}
+
+		r.log.Info(
+			"default notification preferences created",
+			"user_id", userID,
+		)
+		return &pref, nil
 	}
 
-	r.log.Info("notification preferences retrieved", "userID", userID)
-	return &pref, nil
+	r.log.Info(
+		"notification preferences loaded",
+		"user_id", userID,
+	)
+	return &pref, err
 }
 
 func (r *notificationRepo) UpdateNotificationPreferences(pref *models.NotificationPreference) error {
