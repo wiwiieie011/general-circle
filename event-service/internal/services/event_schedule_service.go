@@ -46,13 +46,6 @@ func (s *eventScheduleService) CreateScheduleForEvent(
 	if _, err := s.eventRepo.GetByID(eventID); err != nil {
 		return nil, e.ErrEventNotFound
 	}
-	if req.ActivityName == "" {
-		return nil, e.ErrEmptyActivityName
-	}
-
-	if req.Speaker == "" {
-		return nil, e.ErrEmptySpeaker
-	}
 
 	if !req.StartAt.Before(req.EndAt) {
 		return nil, e.ErrNotCorrectScheduleTime

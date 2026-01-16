@@ -32,10 +32,6 @@ func NewEventService(
 }
 
 func (s *eventService) CreateEvent(req dto.CreateEventRequest) (*models.Event, error) {
-	if req.Title == "" {
-		return nil, e.ErrEmptyTitle
-	}
-
 	if req.CategoryID != nil {
 		_, err := s.categoryRepo.GetByID(*req.CategoryID)
 		if err != nil {

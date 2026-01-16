@@ -24,10 +24,6 @@ func NewCategoryService(categoryRepo repository.CategoryRepository) CategoryServ
 }
 
 func (s *categoryService) CreateCategory(req dto.CreateCategoryRequest) (*models.Category, error) {
-	if req.Name == "" {
-		return nil, e.ErrEmptyName
-	}
-
 	existing, err := s.categoryRepo.GetByName(req.Name)
 	if err != nil {
 		if !errors.Is(err, e.ErrCategoryNotFound) {
