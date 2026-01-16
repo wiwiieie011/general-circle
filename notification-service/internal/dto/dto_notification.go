@@ -1,5 +1,6 @@
 package dto
 
+
 type UpdateNotificationPreferencesRequest struct {
 	TicketPurchased *bool `json:"ticket_purchased"`
 	EventCanceled   *bool `json:"event_canceled"`
@@ -33,3 +34,5 @@ type EventReminder struct {
 	EventTitle string `json:"event_title"`
 	UserIDs    []uint `json:"user_ids"` // всех владельцев билетов
 }
+
+

@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"notification-service/internal/dto"
+	"notification-service/internal/middleware"
 	"notification-service/internal/services"
 	"strconv"
 
@@ -24,6 +25,7 @@ func NewNotificationHandler(srv services.NotificationService, log *slog.Logger) 
 
 func (h *NotificationHandler) RegisterRoutes(r *gin.Engine) {
 	notification := r.Group("/notifications")
+	notification.Use(middleware.JWTAuth())
 	{
 		notification.GET("", h.GetAllNotifications)
 		notification.PUT("/:id/read", h.ReadNotificationByID)
@@ -221,7 +223,7 @@ func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
 			"userID", userID,
 			"error", err,
 		)
-		ctx.IndentedJSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -230,7 +232,7 @@ func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
 		"userID", userID,
 	)
 
-	ctx.IndentedJSON(http.StatusOK, settings)
+	ctx.JSON(http.StatusOK, settings)
 }
 
 func (h *NotificationHandler) Count(ctx *gin.Context) {
@@ -252,5 +254,5 @@ func (h *NotificationHandler) Count(ctx *gin.Context) {
 		"userID", userID,
 		"count", count,
 	)
-	ctx.JSON(http.StatusOK, gin.H{"unread count": count})
+	ctx.JSON(http.StatusOK, gin.H{"unread_count": count})
 }

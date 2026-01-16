@@ -80,6 +80,20 @@ func (c *Consumer) handleTicketPurchased(payload []byte) {
 		return
 	}
 
+	pref, err := c.srv.GetNotificationPreferences(evt.UserID)
+	if err != nil {
+		c.log.Error("failed to load preferences", "user_id", evt.UserID, "error", err)
+		return
+	}
+
+	if !pref.TicketPurchased {
+		c.log.Info(
+			"ticket purchased notification disabled",
+			"user_id", evt.UserID,
+		)
+		return
+	}
+
 	notification := &models.Notification{
 		UserID:  evt.UserID,
 		EventID: evt.EventID,
@@ -101,12 +115,23 @@ func (c *Consumer) handleEventCancelled(payload []byte) {
 	}
 
 	for _, userID := range evt.UserIDs {
+
+		pref, err := c.srv.GetNotificationPreferences(userID)
+		if err != nil {
+			c.log.Error("failed to load preferences", "user_id", userID)
+			continue
+		}
+
+		if !pref.EventCanceled {
+			continue
+		}
+
 		notification := &models.Notification{
 			UserID:  userID,
 			EventID: evt.EventID,
-			Type:  string(dto.NotificationTypeEvent),
-			Title: "Мероприятие отменено",
-			Body:  fmt.Sprintf("Мероприятие %s отменено", evt.EventTitle),
+			Type:    string(dto.NotificationTypeEvent),
+			Title:   "Мероприятие отменено",
+			Body:    fmt.Sprintf("Мероприятие %s отменено", evt.EventTitle),
 		}
 		if err := c.srv.CreateNotificationInternal(notification); err != nil {
 			c.log.Error("failed to create  notification:", err)
@@ -121,6 +146,16 @@ func (c *Consumer) handleEventReminder(payload []byte) {
 	}
 
 	for _, userID := range evt.UserIDs {
+
+		pref, err := c.srv.GetNotificationPreferences(userID)
+		if err != nil {
+			c.log.Error("failed to load preferences", "user_id", userID)
+			continue
+		}
+
+		if !pref.EventReminder {
+			continue
+		}
 		notification := &models.Notification{
 			UserID:  userID,
 			EventID: evt.EventID,
