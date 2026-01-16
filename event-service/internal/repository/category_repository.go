@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"errors"
 	"event-service/internal/models"
 
 	e "event-service/internal/errors"
@@ -35,6 +36,9 @@ func (r *gormCategoryRepository) GetByID(id uint) (*models.Category, error) {
 	var category models.Category
 
 	if err := r.db.First(&category, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.ErrCategoryNotFound
+		}
 		return nil, err
 	}
 	return &category, nil
@@ -49,6 +53,9 @@ func (r *gormCategoryRepository) GetByName(name string) (*models.Category, error
 
 	if err := r.db.Where("name = ?", name).
 		First(&category).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, e.ErrCategoryNotFound
+		}
 		return nil, err
 	}
 	return &category, nil
