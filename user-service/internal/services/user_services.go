@@ -25,7 +25,8 @@ func NewUserService(userRepo repository.UserRepository) UserService {
 	return &userService{userRepo: userRepo}
 }
 
-func (s *userService) Register(email, password, firstName, lastName string) (*models.User, error) {	hashedPassword, err := bcrypt.GenerateFromPassword(
+func (s *userService) Register(email, password, firstName, lastName string) (*models.User, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword(
 		[]byte(password),
 		bcrypt.DefaultCost,
 	)
@@ -35,7 +36,7 @@ func (s *userService) Register(email, password, firstName, lastName string) (*mo
 
 	user := &models.User{
 		Email:     email,
-		Password: string(hashedPassword),
+		Password:  string(hashedPassword),
 		FirstName: firstName,
 		LastName:  lastName,
 		Role:      models.RoleUser,
@@ -56,8 +57,6 @@ func (s *userService) Login(email, password string) (*models.User, error) {
 		}
 		return nil, err
 	}
-
-
 
 	if err := bcrypt.CompareHashAndPassword(
 		[]byte(user.Password),
