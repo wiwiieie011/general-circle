@@ -1,10 +1,13 @@
 package services
 
 import (
+	"context"
 	"event-service/internal/dto"
 	e "event-service/internal/errors"
+	"event-service/internal/kafka"
 	"event-service/internal/models"
 	"event-service/internal/repository"
+	"log/slog"
 	"strings"
 )
 
@@ -17,18 +20,28 @@ type EventService interface {
 	PublishEvent(id uint) error
 	CancelEvent(id uint) error
 	GetEventsByUserID(userID uint) ([]models.Event, error)
+	SendEventReminders(ctx context.Context) error
 }
 
 type eventService struct {
-	eventRepo    repository.EventRepository
-	categoryRepo repository.CategoryRepository
+	eventRepo     repository.EventRepository
+	categoryRepo  repository.CategoryRepository
+	kafkaProducer kafka.EventProducer
+	logger        *slog.Logger
 }
 
 func NewEventService(
 	eventRepo repository.EventRepository,
 	categoryRepo repository.CategoryRepository,
+	kafkaProducer kafka.EventProducer,
+	logger *slog.Logger,
 ) EventService {
-	return &eventService{eventRepo: eventRepo, categoryRepo: categoryRepo}
+	return &eventService{
+		eventRepo:     eventRepo,
+		categoryRepo:  categoryRepo,
+		kafkaProducer: kafkaProducer,
+		logger:        logger,
+	}
 }
 
 func (s *eventService) CreateEvent(req dto.CreateEventRequest) (*models.Event, error) {
@@ -142,9 +155,48 @@ func (s *eventService) CancelEvent(id uint) error {
 
 	event.Status = string(dto.Cancelled)
 
-	return s.eventRepo.Update(event)
+	if err := s.eventRepo.Update(event); err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+	if err := s.kafkaProducer.SendEventCancelled(ctx, id); err != nil {
+		s.logger.Error("failed to send event cancelled to kafka",
+			"error", err,
+			"event_id", id)
+	}
+
+	return nil
 }
 
 func (s *eventService) GetEventsByUserID(userID uint) ([]models.Event, error) {
 	return s.eventRepo.GetByUserID(userID)
+}
+
+func (s *eventService) SendEventReminders(ctx context.Context) error {
+	events, err := s.eventRepo.GetEventStartingTomorrow()
+	if err != nil {
+		return err
+	}
+
+	for _, event := range events {
+		if len(event.Schedule) == 0 {
+			s.logger.Warn("event has no schedule", "event_id", event.ID)
+			continue
+		}
+
+		firsActivity := event.Schedule[0]
+		for _, schedule := range event.Schedule {
+			if schedule.StartAt.Before(firsActivity.StartAt) {
+				firsActivity = schedule
+			}
+		}
+
+		if err := s.kafkaProducer.SendEventReminder(ctx, event.ID, event.Title, firsActivity.StartAt); err != nil {
+			s.logger.Error("failed to send event reminder",
+				"error", err,
+				"event_id", event.ID)
+		}
+	}
+	return nil
 }
