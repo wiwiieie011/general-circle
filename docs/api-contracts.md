@@ -29,4 +29,31 @@
   "updated_at": "2026-01-10T12:00:00Z"
 }
 
+### GET /events/:id/tickets
+Запрос:
+{
+  "ticket_type_id": 3,
+  "user_id": 123,
+}
+Ответ:
+{
+  "id": 123,
+  "event_id": 123,
+  "ticket_type_id": 123,
+  "user_id": 123,
+  "code": "dhsjhsd",
+  "status": "active",
+
+}
+
 ## Kafka-события
+ticket.purchased
+{
+  "ticket_id": "123e4567-e89b-12d3-a456-426614174000",
+  "event_id": 42,
+  "ticket_type_id": 3,
+  "user_id": 7,
+  "code": "ABCD1234",
+  "status": "active",
+  "purchased_at": "2026-01-18T11:00:00Z"
+}

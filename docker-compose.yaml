@@ -7,7 +7,42 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pg_data:/var/lib/postgresql/data
+
+  kafka:
+    image: apache/kafka:3.7.0
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+      - ./infra/kafka/server.properties:/opt/kafka/config/kraft/server.properties
+      - ./infra/kafka/topics.sh:/opt/kafka/topics.sh
+    command:
+      - bash
+      - -c
+      - |
+          set -e
+          if [ ! -f /var/lib/kafka/data/meta.properties ]; then
+            echo "Formatting KRaft storage"
+            /opt/kafka/bin/kafka-storage.sh format \
+              --cluster-id kraft-cluster-1 \
+              --config /opt/kafka/config/kraft/server.properties
+          fi
+
+          exec /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/kraft/server.properties
+
+  kafka-ui:
+    image: kafbat/kafka-ui:main
+    container_name: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      - kafka
 
 volumes:
-  pgdata:
+  pg_data:
+  kafka_data:

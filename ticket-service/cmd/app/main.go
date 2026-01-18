@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"ticket-service/internal/config"
+	"ticket-service/internal/kafka"
 	"ticket-service/internal/transport"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +21,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	db := config.Connect(logger)
+	db := config.DBConnect(logger)
+
+	cfg := config.LoadConfig()
+
+	kafkaProducer := kafka.NewProducer(
+		cfg.Kafka.Brokers,
+		cfg.Kafka.TopicTicketPurchased,
+	)
+	defer kafkaProducer.Close()
 
 	port := os.Getenv("SERVICE_PORT")
 	if port == "" {
@@ -29,7 +38,7 @@ func main() {
 
 	r := gin.Default()
 
-	transport.RegisterRoutes(r, logger, db)
+	transport.RegisterRoutes(r, logger, db, kafkaProducer)
 
 	if err := r.Run(":" + port); err != nil {
 		logger.Error("не удалось запустить сервер: ", slog.Any("error", err))
