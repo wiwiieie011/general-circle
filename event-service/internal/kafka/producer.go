@@ -3,8 +3,8 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
-	"strconv"
 	"time"
 
 	"github.com/segmentio/kafka-go"
@@ -64,7 +64,7 @@ func (p *Producer) SendEventCancelled(ctx context.Context, eventID uint) error {
 
 	kafkaMessage := kafka.Message{
 		Topic: eventCancelled,
-		Key:   []byte(strconv.FormatUint(uint64(eventID), 10)),
+		Key:   []byte(fmt.Sprintf("%d", eventID)),
 		Value: data,
 		Time:  time.Now(),
 	}
@@ -105,7 +105,7 @@ func (p *Producer) SendEventReminder(ctx context.Context, eventID uint, eventTit
 
 	kafkaMessage := kafka.Message{
 		Topic: eventReminder,
-		Key:   nil,
+		Key:   []byte(fmt.Sprintf("%d", eventID)),
 		Value: data,
 		Time:  time.Now(),
 	}
