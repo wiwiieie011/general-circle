@@ -4,9 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"github.com/segmentio/kafka-go"
+)
+
+const (
+	eventCancelled = "event.cancelled"
+	eventReminder  = "event.reminder"
 )
 
 type Producer struct {
@@ -57,8 +63,8 @@ func (p *Producer) SendEventCancelled(ctx context.Context, eventID uint) error {
 	}
 
 	kafkaMessage := kafka.Message{
-		Topic: "event.cancelled",
-		Key:   nil,
+		Topic: eventCancelled,
+		Key:   []byte(strconv.FormatUint(uint64(eventID), 10)),
 		Value: data,
 		Time:  time.Now(),
 	}
@@ -73,7 +79,7 @@ func (p *Producer) SendEventCancelled(ctx context.Context, eventID uint) error {
 
 	p.logger.Info("event cancelled message sent",
 		"event_id", eventID,
-		"topic", "event.cancelled")
+		"topic", eventCancelled)
 	return nil
 }
 
@@ -98,7 +104,7 @@ func (p *Producer) SendEventReminder(ctx context.Context, eventID uint, eventTit
 	}
 
 	kafkaMessage := kafka.Message{
-		Topic: "event.reminder",
+		Topic: eventReminder,
 		Key:   nil,
 		Value: data,
 		Time:  time.Now(),
@@ -110,6 +116,6 @@ func (p *Producer) SendEventReminder(ctx context.Context, eventID uint, eventTit
 		return err
 	}
 
-	p.logger.Info("event reminder message sent", "event_id", eventID, "topic", "event.reminder")
+	p.logger.Info("event reminder message sent", "event_id", eventID, "topic", eventReminder)
 	return nil
 }

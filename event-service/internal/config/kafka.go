@@ -1,11 +1,14 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 func KafkaBrokers() []string {
 	brokers := os.Getenv("KAFKA_BROKERS")
 	if brokers == "" {
 		return []string{"localhost:9092"}
 	}
-	return []string{brokers}
+	return strings.Split(brokers, ",")
 }

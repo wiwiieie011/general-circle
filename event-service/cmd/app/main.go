@@ -8,6 +8,7 @@ import (
 	"event-service/internal/repository"
 	"event-service/internal/services"
 	"event-service/internal/transport"
+	"log"
 	"log/slog"
 	"os"
 
@@ -57,7 +58,7 @@ func main() {
 		}
 	})
 	if err != nil {
-		logger.Error("failed to add cron job", "error", err)
+		log.Fatal(err)
 	}
 	c.Start()
 	defer c.Stop()

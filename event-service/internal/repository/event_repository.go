@@ -149,7 +149,7 @@ func (r *gormEventRepository) GetEventStartingTomorrow() ([]models.Event, error)
 	}
 
 	err = r.db.Where("status = ?", "published").
-		Where("id IN ?").
+		Where("id IN ?", eventsIDs).
 		Preload("Category").
 		Preload("Schedule").
 		Find(&events).Error

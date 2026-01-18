@@ -185,14 +185,14 @@ func (s *eventService) SendEventReminders(ctx context.Context) error {
 			continue
 		}
 
-		firsActivity := event.Schedule[0]
+		firstActivity := event.Schedule[0]
 		for _, schedule := range event.Schedule {
-			if schedule.StartAt.Before(firsActivity.StartAt) {
-				firsActivity = schedule
+			if schedule.StartAt.Before(firstActivity.StartAt) {
+				firstActivity = schedule
 			}
 		}
 
-		if err := s.kafkaProducer.SendEventReminder(ctx, event.ID, event.Title, firsActivity.StartAt); err != nil {
+		if err := s.kafkaProducer.SendEventReminder(ctx, event.ID, event.Title, firstActivity.StartAt); err != nil {
 			s.logger.Error("failed to send event reminder",
 				"error", err,
 				"event_id", event.ID)
