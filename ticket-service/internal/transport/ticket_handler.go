@@ -92,6 +92,7 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		case errors.Is(err, dto.ErrEventNotPublished),
 			errors.Is(err, dto.ErrTicketSoldOut),
+			errors.Is(err, dto.ErrEventNotStarted),
 			errors.Is(err, dto.ErrEventEnded):
 			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 		default:
