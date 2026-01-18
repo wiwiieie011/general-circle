@@ -2,7 +2,7 @@
 GET http://localhost:8082/ping
 Content-Type: application/json
 
-### Создать событие
+### Создать ticket type
 POST http://localhost:8082/events/15/ticket-types
 Content-Type: application/json
 
@@ -12,4 +12,13 @@ Content-Type: application/json
   "quantity": 100,
   "sales_start": "2026-02-01T00:00:00Z",
   "sales_end": "2026-02-10T23:59:59Z"
+}
+
+### Создать ticket
+POST http://localhost:8082/events/12/tickets
+Content-Type: application/json
+
+{
+  "ticket_type_id": 3,
+  "user_id": 2
 }

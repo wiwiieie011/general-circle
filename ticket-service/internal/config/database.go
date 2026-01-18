@@ -10,11 +10,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func Connect(logger *slog.Logger) *gorm.DB {
+func DBConnect(logger *slog.Logger) *gorm.DB {
 	dbHost := os.Getenv("POSTGRES_HOST")
 	dbUser := os.Getenv("POSTGRES_USER")
 	dbPass := os.Getenv("POSTGRES_PASSWORD")
-	dbName := os.Getenv("ORDERS_DB_NAME")
+	dbName := os.Getenv("TICKETS_DB_NAME")
 	dbPort := os.Getenv("POSTGRES_PORT")
 	dbMode := os.Getenv("DB_SSLMODE")
 
