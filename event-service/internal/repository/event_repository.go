@@ -4,8 +4,10 @@ import (
 	"event-service/internal/dto"
 	e "event-service/internal/errors"
 	"event-service/internal/models"
-	"gorm.io/gorm"
 	"strings"
+	"time"
+
+	"gorm.io/gorm"
 )
 
 type EventRepository interface {
@@ -15,6 +17,7 @@ type EventRepository interface {
 	Delete(id uint) error
 	List(query dto.EventListQuery) ([]models.Event, error)
 	GetByUserID(userID uint) ([]models.Event, error)
+	GetEventStartingTomorrow() ([]models.Event, error)
 }
 
 type gormEventRepository struct {
@@ -122,5 +125,37 @@ func (r *gormEventRepository) GetByUserID(userID uint) ([]models.Event, error) {
 		return nil, err
 	}
 
+	return events, nil
+}
+
+func (r *gormEventRepository) GetEventStartingTomorrow() ([]models.Event, error) {
+	var events []models.Event
+
+	tomorrow := time.Now().AddDate(0, 0, 1)
+	tomorrowStart := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 0, 0, 0, 0, tomorrow.Location())
+	tomorrowEnd := time.Date(tomorrow.Year(), tomorrow.Month(), tomorrow.Day(), 23, 59, 59, 999999999, tomorrow.Location())
+
+	var eventsIDs []uint
+	err := r.db.Model(&models.EventSchedule{}).
+		Select("DISTINCT event_id").
+		Where("start_at >= ? AND start_at <= ?", tomorrowStart, tomorrowEnd).
+		Pluck("event_id", &eventsIDs).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(eventsIDs) == 0 {
+		return []models.Event{}, nil
+	}
+
+	err = r.db.Where("status = ?", "published").
+		Where("id IN ?", eventsIDs).
+		Preload("Category").
+		Preload("Schedule").
+		Find(&events).Error
+
+	if err != nil {
+		return nil, err
+	}
 	return events, nil
 }
