@@ -84,9 +84,19 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 	}
 
 	ticket, err := h.ticketService.Create(ctx, eventId, requestDto)
+
 	if err != nil {
 		h.logger.Error(err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		switch {
+		case errors.Is(err, dto.ErrEventNotFound):
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		case errors.Is(err, dto.ErrEventNotPublished),
+			errors.Is(err, dto.ErrTicketSoldOut),
+			errors.Is(err, dto.ErrEventEnded):
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+		}
 		return
 	}
 

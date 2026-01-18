@@ -23,11 +23,8 @@ func main() {
 
 	db := config.DBConnect(logger)
 
-	cfg := config.LoadConfig()
-
 	kafkaProducer := kafka.NewProducer(
-		cfg.Kafka.Brokers,
-		cfg.Kafka.TopicTicketPurchased,
+		[]string{os.Getenv("KAFKA_BROKER")},
 	)
 	defer kafkaProducer.Close()
 

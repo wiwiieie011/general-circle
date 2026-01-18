@@ -60,7 +60,10 @@ func (s *TicketService) Create(ctx context.Context, eventId uint64, requestDto d
 
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 
-		ticketType, err := s.ticketTypeRepo.GetByIDForUpdate(tx, requestDto.TicketTypeID)
+		ticketRepo := s.ticketRepo.WithDB(tx)
+		ticketTypeRepo := s.ticketTypeRepo.WithDB(tx)
+
+		ticketType, err := ticketTypeRepo.GetByIDForUpdate(requestDto.TicketTypeID)
 		if err != nil {
 			return err
 		}
@@ -79,7 +82,7 @@ func (s *TicketService) Create(ctx context.Context, eventId uint64, requestDto d
 			return dto.ErrTicketSoldOut
 		}
 
-		if err := s.ticketTypeRepo.IncrementSold(tx, requestDto.TicketTypeID); err != nil {
+		if err := ticketTypeRepo.IncrementSold(requestDto.TicketTypeID); err != nil {
 			return err
 		}
 
@@ -91,9 +94,7 @@ func (s *TicketService) Create(ctx context.Context, eventId uint64, requestDto d
 			Status:       models.TicketStatusActive,
 		}
 
-		err = s.ticketRepo.Create(tx, ticket)
-
-		return nil
+		return ticketRepo.Create(ticket)
 	})
 
 	if err != nil {
@@ -112,7 +113,7 @@ func (s *TicketService) Create(ctx context.Context, eventId uint64, requestDto d
 	}
 
 	if err := s.kafkaProducer.PublishTicketPurchased(ctx, event); err != nil {
-		s.logger.Warn("kafka publish failed", err.Error())
+		s.logger.Warn("kafka publish failed", "error", err.Error())
 	}
 
 	return ticket, nil

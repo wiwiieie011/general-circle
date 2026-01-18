@@ -16,6 +16,10 @@ func NewTicketTypeRepository(db *gorm.DB) *TicketTypeRepository {
 	return &TicketTypeRepository{db: db}
 }
 
+func (r *TicketTypeRepository) WithDB(db *gorm.DB) *TicketTypeRepository {
+	return &TicketTypeRepository{db: db}
+}
+
 func (r *TicketTypeRepository) Create(ctx context.Context, ticketType *models.TicketType) error {
 	return r.db.WithContext(ctx).Create(ticketType).Error
 }
@@ -32,17 +36,17 @@ func (r *TicketTypeRepository) GetByID(ctx context.Context, id uint64) (*models.
 	return &ticketType, nil
 }
 
-func (r *TicketTypeRepository) GetByIDForUpdate(db *gorm.DB, id uint64) (*models.TicketType, error) {
+func (r *TicketTypeRepository) GetByIDForUpdate(id uint64) (*models.TicketType, error) {
 	var tt models.TicketType
-	err := db.
+	err := r.db.
 		Clauses(clause.Locking{Strength: "UPDATE"}).
 		First(&tt, id).
 		Error
 	return &tt, err
 }
 
-func (r *TicketTypeRepository) IncrementSold(db *gorm.DB, id uint64) error {
-	return db.Model(&models.TicketType{}).
+func (r *TicketTypeRepository) IncrementSold(id uint64) error {
+	return r.db.Model(&models.TicketType{}).
 		Where("id = ?", id).
 		UpdateColumn("sold", gorm.Expr("sold + 1")).
 		Error

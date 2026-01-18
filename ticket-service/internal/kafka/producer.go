@@ -12,7 +12,7 @@ type Producer struct {
 	writer *kafka_go.Writer
 }
 
-func NewProducer(brokers []string, topic string) *Producer {
+func NewProducer(brokers []string) *Producer {
 	return &Producer{
 		writer: &kafka_go.Writer{
 			Addr:     kafka_go.TCP(brokers...),

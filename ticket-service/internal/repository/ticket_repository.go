@@ -14,6 +14,10 @@ func NewTicketRepository(db *gorm.DB) *TicketRepository {
 	return &TicketRepository{db: db}
 }
 
-func (r *TicketRepository) Create(db *gorm.DB, ticket *models.Ticket) error {
-	return db.Create(ticket).Error
+func (r *TicketRepository) WithDB(db *gorm.DB) *TicketRepository {
+	return &TicketRepository{db: db}
+}
+
+func (r *TicketRepository) Create(ticket *models.Ticket) error {
+	return r.db.Create(ticket).Error
 }
