@@ -19,9 +19,9 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.Default().Handler())
+	logger := config.InitLogger()
 
-	if err := godotenv.Load(".env"); err != nil {
+	if err := godotenv.Load("../.env", ".env"); err != nil {
 		logger.Error("failed to load .env file", "error", err)
 		os.Exit(1)
 	}
@@ -39,15 +39,19 @@ func main() {
 
 	brokers := config.KafkaBrokers()
 	kafkaProducer := kafka.NewProducer(brokers, logger)
-	defer kafkaProducer.Close()
+	defer func() {
+		if err := kafkaProducer.Close(); err != nil {
+			logger.Error("failed to close kafka producer", "error", err)
+		}
+	}()
 
-	eventRepo := repository.NewEventRepository(db)
-	scheduleRepo := repository.NewEventScheduleRepository(db)
-	categoryRepo := repository.NewCategoryRepository(db)
+	eventRepo := repository.NewEventRepository(db, logger)
+	scheduleRepo := repository.NewEventScheduleRepository(db, logger)
+	categoryRepo := repository.NewCategoryRepository(db, logger)
 
 	eventService := services.NewEventService(eventRepo, categoryRepo, kafkaProducer, logger)
-	scheduleService := services.NewEventScheduleService(scheduleRepo, eventRepo)
-	categoryService := services.NewCategoryService(categoryRepo)
+	scheduleService := services.NewEventScheduleService(scheduleRepo, eventRepo, logger)
+	categoryService := services.NewCategoryService(categoryRepo, logger)
 
 	// Запустить cron для отправки напоминаний
 	c := cron.New()

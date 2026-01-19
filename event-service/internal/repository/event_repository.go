@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"errors"
 	"event-service/internal/dto"
 	e "event-service/internal/errors"
 	"event-service/internal/models"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -21,18 +23,28 @@ type EventRepository interface {
 }
 
 type gormEventRepository struct {
-	db *gorm.DB
+	db     *gorm.DB
+	logger *slog.Logger
 }
 
-func NewEventRepository(db *gorm.DB) EventRepository {
-	return &gormEventRepository{db: db}
+func NewEventRepository(db *gorm.DB, logger *slog.Logger) EventRepository {
+	return &gormEventRepository{db: db, logger: logger}
 }
 
 func (r *gormEventRepository) Create(event *models.Event) error {
 	if event == nil {
 		return e.ErrEventIsNil
 	}
-	return r.db.Create(event).Error
+	if r.logger != nil {
+		r.logger.Debug("creating event", slog.String("title", event.Title), slog.Int("user_id", int(event.UserID)))
+	}
+	if err := r.db.Create(event).Error; err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to create event", "error", err)
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *gormEventRepository) GetByID(id uint) (*models.Event, error) {
@@ -41,6 +53,15 @@ func (r *gormEventRepository) GetByID(id uint) (*models.Event, error) {
 	if err := r.db.Preload("Category").
 		Preload("Schedule").
 		First(&event, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if r.logger != nil {
+				r.logger.Debug("event not found by id", slog.Int("id", int(id)))
+			}
+			return nil, e.ErrEventNotFound
+		}
+		if r.logger != nil {
+			r.logger.Error("failed to get event by id", "error", err, "id", id)
+		}
 		return nil, err
 	}
 	return &event, nil
@@ -50,11 +71,29 @@ func (r *gormEventRepository) Update(event *models.Event) error {
 	if event == nil {
 		return e.ErrEventIsNil
 	}
-	return r.db.Save(event).Error
+	if r.logger != nil {
+		r.logger.Debug("updating event", slog.Int("id", int(event.ID)))
+	}
+	if err := r.db.Save(event).Error; err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to update event", "error", err, "id", event.ID)
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *gormEventRepository) Delete(id uint) error {
-	return r.db.Delete(&models.Event{}, id).Error
+	if r.logger != nil {
+		r.logger.Debug("deleting event", slog.Int("id", int(id)))
+	}
+	if err := r.db.Delete(&models.Event{}, id).Error; err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to delete event", "error", err, "id", id)
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, error) {
@@ -109,6 +148,9 @@ func (r *gormEventRepository) List(query dto.EventListQuery) ([]models.Event, er
 		Limit(query.Limit).
 		Offset(offset).
 		Find(&events).Error; err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to list events", "error", err)
+		}
 		return nil, err
 	}
 	return events, nil
@@ -122,6 +164,9 @@ func (r *gormEventRepository) GetByUserID(userID uint) ([]models.Event, error) {
 		Preload("Schedule").
 		Order("created_at DESC").
 		Find(&events).Error; err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to get events by user", "error", err, "user_id", userID)
+		}
 		return nil, err
 	}
 
@@ -141,6 +186,9 @@ func (r *gormEventRepository) GetEventStartingTomorrow() ([]models.Event, error)
 		Where("start_at >= ? AND start_at <= ?", tomorrowStart, tomorrowEnd).
 		Pluck("event_id", &eventsIDs).Error
 	if err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to query schedules for tomorrow", "error", err)
+		}
 		return nil, err
 	}
 
@@ -155,6 +203,9 @@ func (r *gormEventRepository) GetEventStartingTomorrow() ([]models.Event, error)
 		Find(&events).Error
 
 	if err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to get events starting tomorrow", "error", err)
+		}
 		return nil, err
 	}
 	return events, nil

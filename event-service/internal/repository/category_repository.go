@@ -5,6 +5,7 @@ import (
 	"event-service/internal/models"
 
 	e "event-service/internal/errors"
+	"log/slog"
 
 	"gorm.io/gorm"
 )
@@ -18,18 +19,28 @@ type CategoryRepository interface {
 }
 
 type gormCategoryRepository struct {
-	db *gorm.DB
+	db     *gorm.DB
+	logger *slog.Logger
 }
 
-func NewCategoryRepository(db *gorm.DB) CategoryRepository {
-	return &gormCategoryRepository{db: db}
+func NewCategoryRepository(db *gorm.DB, logger *slog.Logger) CategoryRepository {
+	return &gormCategoryRepository{db: db, logger: logger}
 }
 
 func (r *gormCategoryRepository) Create(category *models.Category) error {
 	if category == nil {
 		return e.ErrCategoryIsNil
 	}
-	return r.db.Create(category).Error
+	if r.logger != nil {
+		r.logger.Debug("creating category", slog.String("name", category.Name))
+	}
+	if err := r.db.Create(category).Error; err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to create category", "error", err)
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *gormCategoryRepository) GetByID(id uint) (*models.Category, error) {
@@ -37,6 +48,9 @@ func (r *gormCategoryRepository) GetByID(id uint) (*models.Category, error) {
 
 	if err := r.db.First(&category, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if r.logger != nil {
+				r.logger.Debug("category not found by id", slog.Int("id", int(id)))
+			}
 			return nil, e.ErrCategoryNotFound
 		}
 		return nil, err
@@ -45,7 +59,16 @@ func (r *gormCategoryRepository) GetByID(id uint) (*models.Category, error) {
 }
 
 func (r *gormCategoryRepository) Delete(id uint) error {
-	return r.db.Delete(&models.Category{}, id).Error
+	if r.logger != nil {
+		r.logger.Debug("deleting category", slog.Int("id", int(id)))
+	}
+	if err := r.db.Delete(&models.Category{}, id).Error; err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to delete category", "error", err, "id", id)
+		}
+		return err
+	}
+	return nil
 }
 
 func (r *gormCategoryRepository) GetByName(name string) (*models.Category, error) {
@@ -54,6 +77,9 @@ func (r *gormCategoryRepository) GetByName(name string) (*models.Category, error
 	if err := r.db.Where("name = ?", name).
 		First(&category).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if r.logger != nil {
+				r.logger.Debug("category not found by name", slog.String("name", name))
+			}
 			return nil, e.ErrCategoryNotFound
 		}
 		return nil, err
@@ -65,6 +91,9 @@ func (r *gormCategoryRepository) List() ([]models.Category, error) {
 	var categories []models.Category
 
 	if err := r.db.Find(&categories).Error; err != nil {
+		if r.logger != nil {
+			r.logger.Error("failed to list categories", "error", err)
+		}
 		return nil, err
 	}
 	return categories, nil

@@ -6,7 +6,7 @@ import (
 )
 
 func KafkaBrokers() []string {
-	brokers := os.Getenv("KAFKA_BROKERS")
+	brokers := os.Getenv("KAFKA_BROKER")
 	if brokers == "" {
 		return []string{"localhost:9092"}
 	}
