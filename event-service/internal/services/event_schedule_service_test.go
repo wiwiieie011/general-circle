@@ -37,8 +37,17 @@ func (m *mockEventScheduleRepo) GetByEventID(eid uint) ([]models.EventSchedule, 
 }
 
 func TestSchedule_GetByEventID_Success(t *testing.T) {
-	repo := &mockEventScheduleRepo{GetByEventIDFunc: func(eid uint) ([]models.EventSchedule, error) { return []models.EventSchedule{{}, {}}, nil }}
-	evtRepo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return &models.Event{Base: models.Base{ID: id}}, nil }}
+	repo := &mockEventScheduleRepo{
+		GetByEventIDFunc: func(eid uint) ([]models.EventSchedule, error) {
+			return []models.EventSchedule{{}, {}}, nil
+		},
+	}
+
+	evtRepo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return &models.Event{Base: models.Base{ID: id}}, nil
+		},
+	}
 
 	svc := NewEventScheduleService(repo, evtRepo, logger())
 
@@ -54,8 +63,15 @@ func TestSchedule_GetByEventID_Success(t *testing.T) {
 
 func TestSchedule_GetByEventID_EventNotFound(t *testing.T) {
 	repo := &mockEventScheduleRepo{}
-	evtRepo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return nil, errors.New("missing") }}
+
+	evtRepo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return nil, errors.New("missing")
+		},
+	}
+
 	svc := NewEventScheduleService(repo, evtRepo, logger())
+
 	_, err := svc.GetScheduleByEventID(1)
 	if err == nil || !errors.Is(err, e.ErrEventNotFound) {
 		t.Fatalf("expected ErrEventNotFound, got %v", err)
@@ -68,7 +84,11 @@ func TestSchedule_Create_Success(t *testing.T) {
 		s.ID = 10
 		return nil
 	}}
-	evtRepo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return &models.Event{Base: models.Base{ID: id}}, nil }}
+	evtRepo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return &models.Event{Base: models.Base{ID: id}}, nil
+		},
+	}
 
 	svc := NewEventScheduleService(repo, evtRepo, logger())
 
@@ -97,7 +117,12 @@ func TestSchedule_Create_Success(t *testing.T) {
 func TestSchedule_Create_EventNotFound(t *testing.T) {
 	now := time.Now()
 	repo := &mockEventScheduleRepo{}
-	evtRepo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return nil, errors.New("missing") }}
+	evtRepo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return nil, errors.New("missing")
+		},
+	}
+
 	svc := NewEventScheduleService(repo, evtRepo, logger())
 	_, err := svc.CreateScheduleForEvent(2, dto.CreateScheduleRequest{ActivityName: "Talk", Speaker: "Alice", StartAt: now, EndAt: now.Add(time.Hour)})
 	if err == nil || !errors.Is(err, e.ErrEventNotFound) {
@@ -108,7 +133,12 @@ func TestSchedule_Create_EventNotFound(t *testing.T) {
 func TestSchedule_Create_BadTime(t *testing.T) {
 	now := time.Now()
 	repo := &mockEventScheduleRepo{}
-	evtRepo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return &models.Event{Base: models.Base{ID: id}}, nil }}
+	evtRepo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return &models.Event{Base: models.Base{ID: id}}, nil
+		},
+	}
+
 	svc := NewEventScheduleService(repo, evtRepo, logger())
 	_, err := svc.CreateScheduleForEvent(2, dto.CreateScheduleRequest{ActivityName: "Talk", Speaker: "Alice", StartAt: now, EndAt: now.Add(-time.Hour)})
 	if err == nil || !errors.Is(err, e.ErrNotCorrectScheduleTime) {

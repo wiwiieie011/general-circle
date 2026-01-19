@@ -144,7 +144,11 @@ func TestEvent_Create_Success_NoCategory(t *testing.T) {
 func TestEvent_Create_CategoryNotFound(t *testing.T) {
 	catID := uint(5)
 	repo := &mockEventRepo{}
-	catRepo := &mockCategoryRepo{GetByIDFunc: func(id uint) (*models.Category, error) { return nil, errors.New("missing") }}
+	catRepo := &mockCategoryRepo{
+		GetByIDFunc: func(id uint) (*models.Category, error) {
+			return nil, errors.New("missing")
+		},
+	}
 	svc := NewEventService(repo, catRepo, &mockProducer{}, logger())
 
 	_, err := svc.CreateEvent(dto.CreateEventRequest{Title: "Event", UserID: 1, CategoryID: &catID})
@@ -155,7 +159,11 @@ func TestEvent_Create_CategoryNotFound(t *testing.T) {
 
 func TestEvent_Create_CreateError(t *testing.T) {
 	boom := errors.New("create failed")
-	repo := &mockEventRepo{CreateFunc: func(e *models.Event) error { return boom }}
+	repo := &mockEventRepo{
+		CreateFunc: func(e *models.Event) error {
+			return boom
+		},
+	}
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 
 	_, err := svc.CreateEvent(dto.CreateEventRequest{Title: "Event", UserID: 1})
@@ -185,7 +193,11 @@ func TestEvent_Get_Success(t *testing.T) {
 }
 
 func TestEvent_Get_NotFound(t *testing.T) {
-	repo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return nil, errors.New("missing") }}
+	repo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return nil, errors.New("missing")
+		},
+	}
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 	got, err := svc.GetEvent(7)
 	if err == nil || !errors.Is(err, e.ErrEventNotFound) || got != nil {
@@ -208,7 +220,11 @@ func TestEvent_Delete_Success(t *testing.T) {
 }
 
 func TestEvent_Delete_NotFound(t *testing.T) {
-	repo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return nil, errors.New("missing") }}
+	repo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return nil, errors.New("missing")
+		},
+	}
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 	if err := svc.DeleteEvent(3); err == nil || !errors.Is(err, e.ErrEventNotFound) {
 		t.Fatalf("expected ErrEventNotFound, got %v", err)
@@ -236,20 +252,43 @@ func TestEvent_Update_Success(t *testing.T) {
 		UpdateFunc: func(e *models.Event) error { return nil },
 	}
 	catID := uint(2)
-	catRepo := &mockCategoryRepo{GetByIDFunc: func(id uint) (*models.Category, error) { return &models.Category{Base: models.Base{ID: id}}, nil }}
+	catRepo := &mockCategoryRepo{
+		GetByIDFunc: func(id uint) (*models.Category, error) {
+			return &models.Category{Base: models.Base{ID: id}}, nil
+		},
+	}
 	svc := NewEventService(repo, catRepo, &mockProducer{}, logger())
 
 	got, err := svc.UpdateEvent(dto.UpdateEventRequest{Title: &name, Seats: &seats, UserID: &uid, CategoryID: &catID}, 1)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got.Title != "New Title" || got.Seats == nil || *got.Seats != 55 || got.UserID != 9 || got.CategoryID == nil || *got.CategoryID != 2 {
-		t.Fatalf("unexpected event: %#v", got)
+	if got.Title != "New Title" {
+		t.Fatalf("expected Title 'New Title', got %q", got.Title)
+	}
+	if got.Seats == nil {
+		t.Fatalf("expected Seats to be set")
+	}
+	if *got.Seats != 55 {
+		t.Fatalf("expected Seats=55, got %d", *got.Seats)
+	}
+	if got.UserID != 9 {
+		t.Fatalf("expected UserID=9, got %d", got.UserID)
+	}
+	if got.CategoryID == nil {
+		t.Fatalf("expected CategoryID to be set")
+	}
+	if *got.CategoryID != 2 {
+		t.Fatalf("expected CategoryID=2, got %d", *got.CategoryID)
 	}
 }
 
 func TestEvent_Update_NotFound(t *testing.T) {
-	repo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return nil, errors.New("missing") }}
+	repo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return nil, errors.New("missing")
+		},
+	}
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 	_, err := svc.UpdateEvent(dto.UpdateEventRequest{}, 1)
 	if err == nil || !errors.Is(err, e.ErrEventNotFound) {
@@ -258,7 +297,11 @@ func TestEvent_Update_NotFound(t *testing.T) {
 }
 
 func TestEvent_Update_EmptyTitle(t *testing.T) {
-	repo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return &models.Event{Base: models.Base{ID: id}, Title: "t"}, nil }}
+	repo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return &models.Event{Base: models.Base{ID: id}, Title: "t"}, nil
+		},
+	}
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 	empty := "  "
 	_, err := svc.UpdateEvent(dto.UpdateEventRequest{Title: &empty}, 1)
@@ -268,7 +311,11 @@ func TestEvent_Update_EmptyTitle(t *testing.T) {
 }
 
 func TestEvent_Update_BadSeats(t *testing.T) {
-	repo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return &models.Event{Base: models.Base{ID: id}}, nil }}
+	repo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return &models.Event{Base: models.Base{ID: id}}, nil
+		},
+	}
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 	seats := -1
 	_, err := svc.UpdateEvent(dto.UpdateEventRequest{Seats: &seats}, 1)
@@ -278,8 +325,16 @@ func TestEvent_Update_BadSeats(t *testing.T) {
 }
 
 func TestEvent_Update_BadCategory(t *testing.T) {
-	repo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return &models.Event{Base: models.Base{ID: id}}, nil }}
-	catRepo := &mockCategoryRepo{GetByIDFunc: func(id uint) (*models.Category, error) { return nil, errors.New("missing") }}
+	repo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return &models.Event{Base: models.Base{ID: id}}, nil
+		},
+	}
+	catRepo := &mockCategoryRepo{
+		GetByIDFunc: func(id uint) (*models.Category, error) {
+			return nil, errors.New("missing")
+		},
+	}
 	svc := NewEventService(repo, catRepo, &mockProducer{}, logger())
 	catID := uint(77)
 	_, err := svc.UpdateEvent(dto.UpdateEventRequest{CategoryID: &catID}, 1)
@@ -328,7 +383,11 @@ func TestEvent_Publish_Success(t *testing.T) {
 }
 
 func TestEvent_Publish_NotFound(t *testing.T) {
-	repo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return nil, errors.New("missing") }}
+	repo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return nil, errors.New("missing")
+		},
+	}
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 	if err := svc.PublishEvent(1); err == nil || !errors.Is(err, e.ErrEventNotFound) {
 		t.Fatalf("expected ErrEventNotFound, got %v", err)
@@ -359,7 +418,9 @@ func TestEvent_Cancel_Success_ProducerErrorIgnored(t *testing.T) {
 			return nil
 		},
 	}
-	prod := &mockProducer{SendCancelledFunc: func(ctx context.Context, id uint) error { return errors.New("kafka down") }}
+	prod := &mockProducer{SendCancelledFunc: func(ctx context.Context, id uint) error {
+		return errors.New("kafka down")
+	}}
 	svc := NewEventService(repo, &mockCategoryRepo{}, prod, logger())
 	if err := svc.CancelEvent(1); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -370,7 +431,11 @@ func TestEvent_Cancel_Success_ProducerErrorIgnored(t *testing.T) {
 }
 
 func TestEvent_Cancel_NotFound(t *testing.T) {
-	repo := &mockEventRepo{GetByIDFunc: func(id uint) (*models.Event, error) { return nil, errors.New("missing") }}
+	repo := &mockEventRepo{
+		GetByIDFunc: func(id uint) (*models.Event, error) {
+			return nil, errors.New("missing")
+		},
+	}
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 	if err := svc.CancelEvent(1); err == nil || !errors.Is(err, e.ErrEventNotFound) {
 		t.Fatalf("expected ErrEventNotFound, got %v", err)
@@ -389,7 +454,11 @@ func TestEvent_Cancel_NotPublished(t *testing.T) {
 
 func TestEvent_GetByUserID_Success(t *testing.T) {
 	want := []models.Event{{Base: models.Base{ID: 1}}}
-	repo := &mockEventRepo{GetByUserIDFunc: func(uid uint) ([]models.Event, error) { return want, nil }}
+	repo := &mockEventRepo{
+		GetByUserIDFunc: func(uid uint) ([]models.Event, error) {
+			return want, nil
+		},
+	}
 
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 
@@ -428,7 +497,11 @@ func TestEvent_SendReminders(t *testing.T) {
 }
 
 func TestEvent_SendReminders_RepoError(t *testing.T) {
-	repo := &mockEventRepo{GetEventStartingTomorrowFunc: func() ([]models.Event, error) { return nil, errors.New("db") }}
+	repo := &mockEventRepo{
+		GetEventStartingTomorrowFunc: func() ([]models.Event, error) {
+			return nil, errors.New("db")
+		},
+	}
 	svc := NewEventService(repo, &mockCategoryRepo{}, &mockProducer{}, logger())
 	if err := svc.SendEventReminders(context.Background()); err == nil {
 		t.Fatalf("expected error")
