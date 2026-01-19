@@ -16,8 +16,11 @@ func proxyToService(baseURL string) gin.HandlerFunc {
 		// /api/notifications/123/read -> /notifications/123/read
 		targetPath := strings.TrimPrefix(c.Request.URL.Path, "/api")
 
-		// Собираем итоговый URL
+		// Собираем итоговый URL с query-параметрами
 		targetURL := baseURL + targetPath
+		if c.Request.URL.RawQuery != "" {
+			targetURL += "?" + c.Request.URL.RawQuery
+		}
 
 		// Читаем тело запроса
 		body, _ := io.ReadAll(c.Request.Body)
