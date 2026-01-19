@@ -46,7 +46,7 @@ if !errors.Is(err, gorm.ErrRecordNotFound) {
 
 	user := &models.User{
 		Email:     email,
-		Password:  string(hashedPassword),
+		PasswordHash:  string(hashedPassword),
 		FirstName: firstName,
 		LastName:  lastName,
 		Role:      models.RoleUser,
@@ -69,7 +69,7 @@ func (s *userService) Login(email, password string) (*models.User, error) {
 	}
 
 	if err := bcrypt.CompareHashAndPassword(
-		[]byte(user.Password),
+		[]byte(user.PasswordHash),
 		[]byte(password),
 	); err != nil {
 		return nil, errors.New("неверный email или пароль")
