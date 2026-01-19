@@ -12,20 +12,15 @@ import (
 func proxyToService(baseURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		// Убираем префикс /api
-		// /api/notifications/123/read -> /notifications/123/read
 		targetPath := strings.TrimPrefix(c.Request.URL.Path, "/api")
 
-		// Собираем итоговый URL с query-параметрами
 		targetURL := baseURL + targetPath
 		if c.Request.URL.RawQuery != "" {
 			targetURL += "?" + c.Request.URL.RawQuery
 		}
 
-		// Читаем тело запроса
 		body, _ := io.ReadAll(c.Request.Body)
 
-		// Создаём новый HTTP-запрос
 		req, err := http.NewRequest(
 			c.Request.Method,
 			targetURL,
@@ -36,10 +31,8 @@ func proxyToService(baseURL string) gin.HandlerFunc {
 			return
 		}
 
-		// Копируем заголовки
 		req.Header = c.Request.Header.Clone()
 
-		// Отправляем запрос в микросервис
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
@@ -48,10 +41,8 @@ func proxyToService(baseURL string) gin.HandlerFunc {
 		}
 		defer resp.Body.Close()
 
-		// Читаем ответ
 		respBody, _ := io.ReadAll(resp.Body)
 
-		// Возвращаем ответ клиенту
 		c.Data(
 			resp.StatusCode,
 			resp.Header.Get("Content-Type"),
