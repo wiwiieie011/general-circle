@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"gateway/jwtutil"
 	"net/http"
-	"notification-service/internal/jwtutil"
 	"strings"
 
 	"github.com/gin-gonic/gin"
