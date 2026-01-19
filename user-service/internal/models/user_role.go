@@ -1,6 +1,6 @@
 package models
 
-import "gorm.io/gorm"
+import "time"
 
 type UserRole string
 
@@ -11,10 +11,13 @@ const (
 )
 
 type User struct {
-	gorm.Model
-	Email     string `gorm:"uniqueIndex;not null"`
-	Password  string `gorm:"not null"`
-	FirstName string
-	LastName  string
-	Role      UserRole `gorm:"type:varchar(20);not null;default:'user'"`
+	ID           uint   `gorm:"primaryKey"`
+	Email        string `gorm:"uniqueIndex;not null"`
+	PasswordHash string `gorm:"not null"`
+	FirstName    string
+	LastName     string
+	Role         UserRole `gorm:"type:varchar(20);not null;default:'user'"`
+	IsActive     bool     `gorm:"not null;default:true"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
