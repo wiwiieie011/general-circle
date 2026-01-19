@@ -32,9 +32,7 @@ func (h *EventScheduleHandler) RegisterRoutes(r *gin.Engine) {
 func (h *EventScheduleHandler) Create(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		if h.logger != nil {
-			h.logger.Warn("invalid id param for create schedule", "error", err)
-		}
+		h.logger.Warn("invalid id param for create schedule", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
@@ -48,15 +46,11 @@ func (h *EventScheduleHandler) Create(ctx *gin.Context) {
 	schedule, err := h.service.CreateScheduleForEvent(uint(id), req)
 	if err != nil {
 		if errors.Is(err, e.ErrEventNotFound) {
-			if h.logger != nil {
-				h.logger.Warn("event not found when creating schedule", "id", id)
-			}
+			h.logger.Warn("event not found when creating schedule", "id", id)
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		if h.logger != nil {
-			h.logger.Error("failed to create schedule", "error", err)
-		}
+		h.logger.Error("failed to create schedule", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -67,9 +61,7 @@ func (h *EventScheduleHandler) Create(ctx *gin.Context) {
 func (h *EventScheduleHandler) GetByEventID(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		if h.logger != nil {
-			h.logger.Warn("invalid id param for get schedules", "error", err)
-		}
+		h.logger.Warn("invalid id param for get schedules", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
@@ -77,15 +69,11 @@ func (h *EventScheduleHandler) GetByEventID(ctx *gin.Context) {
 	schedules, err := h.service.GetScheduleByEventID(uint(id))
 	if err != nil {
 		if errors.Is(err, e.ErrEventNotFound) {
-			if h.logger != nil {
-				h.logger.Warn("event not found when getting schedules", "id", id)
-			}
+			h.logger.Warn("event not found when getting schedules", "id", id)
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		if h.logger != nil {
-			h.logger.Error("failed to get schedules", "error", err)
-		}
+		h.logger.Error("failed to get schedules", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

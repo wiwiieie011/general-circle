@@ -26,9 +26,7 @@ func NewCategoryService(categoryRepo repository.CategoryRepository, logger *slog
 }
 
 func (s *categoryService) CreateCategory(req dto.CreateCategoryRequest) (*models.Category, error) {
-	if s.logger != nil {
-		s.logger.Debug("CreateCategory called", slog.String("name", req.Name))
-	}
+	s.logger.Debug("CreateCategory called", slog.String("name", req.Name))
 
 	existing, err := s.categoryRepo.GetByName(req.Name)
 	if err != nil {
@@ -44,39 +42,29 @@ func (s *categoryService) CreateCategory(req dto.CreateCategoryRequest) (*models
 	}
 
 	if err := s.categoryRepo.Create(category); err != nil {
-		if s.logger != nil {
-			s.logger.Error("failed to create category", "error", err, "name", req.Name)
-		}
+		s.logger.Error("failed to create category", "error", err, "name", req.Name)
 		return nil, err
 	}
 	return category, nil
 }
 
 func (s *categoryService) GetCategory(id uint) (*models.Category, error) {
-	if s.logger != nil {
-		s.logger.Debug("GetCategory called", slog.Int("id", int(id)))
-	}
+	s.logger.Debug("GetCategory called", slog.Int("id", int(id)))
 	category, err := s.categoryRepo.GetByID(id)
 	if err != nil {
-		if s.logger != nil {
-			s.logger.Warn("category not found", "id", id)
-		}
+		s.logger.Warn("category not found", "id", id)
 		return nil, e.ErrCategoryNotFound
 	}
 	return category, nil
 }
 
 func (s *categoryService) DeleteCategory(id uint) error {
-	if s.logger != nil {
-		s.logger.Debug("DeleteCategory called", slog.Int("id", int(id)))
-	}
+	s.logger.Debug("DeleteCategory called", slog.Int("id", int(id)))
 	if _, err := s.categoryRepo.GetByID(id); err != nil {
 		return e.ErrCategoryNotFound
 	}
 	if err := s.categoryRepo.Delete(id); err != nil {
-		if s.logger != nil {
-			s.logger.Error("failed to delete category", "error", err, "id", id)
-		}
+		s.logger.Error("failed to delete category", "error", err, "id", id)
 		return err
 	}
 	return nil

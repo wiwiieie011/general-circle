@@ -27,13 +27,9 @@ func (r *gormScheduleRepository) Create(schedule *models.EventSchedule) error {
 	if schedule == nil {
 		return e.ErrEventScheduleIsNil
 	}
-	if r.logger != nil {
-		r.logger.Debug("creating schedule", slog.Int("event_id", int(schedule.EventID)))
-	}
+	r.logger.Debug("creating schedule", slog.Int("event_id", int(schedule.EventID)))
 	if err := r.db.Create(schedule).Error; err != nil {
-		if r.logger != nil {
-			r.logger.Error("failed to create schedule", "error", err)
-		}
+		r.logger.Error("failed to create schedule", "error", err)
 		return err
 	}
 	return nil
@@ -43,9 +39,7 @@ func (r *gormScheduleRepository) GetByID(id uint) (*models.EventSchedule, error)
 	var schedule models.EventSchedule
 
 	if err := r.db.First(&schedule, id).Error; err != nil {
-		if r.logger != nil {
-			r.logger.Error("failed to get schedule by id", "error", err, "id", id)
-		}
+		r.logger.Error("failed to get schedule by id", "error", err, "id", id)
 		return nil, err
 	}
 	return &schedule, nil
@@ -56,9 +50,7 @@ func (r *gormScheduleRepository) GetByEventID(eventID uint) ([]models.EventSched
 
 	if err := r.db.Where("event_id = ?", eventID).
 		Find(&schedules).Error; err != nil {
-		if r.logger != nil {
-			r.logger.Error("failed to get schedules by event", "error", err, "event_id", eventID)
-		}
+		r.logger.Error("failed to get schedules by event", "error", err, "event_id", eventID)
 		return nil, err
 	}
 	return schedules, nil

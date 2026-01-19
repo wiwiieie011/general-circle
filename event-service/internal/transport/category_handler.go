@@ -34,9 +34,7 @@ func (h *CategoryHandler) RegisterRoutes(r *gin.Engine) {
 func (h *CategoryHandler) Create(ctx *gin.Context) {
 	var req dto.CreateCategoryRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		if h.logger != nil {
-			h.logger.Warn("invalid json for create category", "error", err)
-		}
+		h.logger.Warn("invalid json for create category", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный JSON"})
 		return
 	}
@@ -44,15 +42,11 @@ func (h *CategoryHandler) Create(ctx *gin.Context) {
 	category, err := h.service.CreateCategory(req)
 	if err != nil {
 		if errors.Is(err, e.ErrCategoryNameExists) {
-			if h.logger != nil {
-				h.logger.Warn("category name exists", "name", req.Name)
-			}
+			h.logger.Warn("category name exists", "name", req.Name)
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}
-		if h.logger != nil {
-			h.logger.Error("failed to create category", "error", err)
-		}
+		h.logger.Error("failed to create category", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -63,9 +57,7 @@ func (h *CategoryHandler) Create(ctx *gin.Context) {
 func (h *CategoryHandler) GetByID(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		if h.logger != nil {
-			h.logger.Warn("invalid id param", "error", err)
-		}
+		h.logger.Warn("invalid id param", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
@@ -73,15 +65,11 @@ func (h *CategoryHandler) GetByID(ctx *gin.Context) {
 	category, err := h.service.GetCategory(uint(id))
 	if err != nil {
 		if errors.Is(err, e.ErrCategoryNotFound) {
-			if h.logger != nil {
-				h.logger.Warn("category not found", "id", id)
-			}
+			h.logger.Warn("category not found", "id", id)
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		if h.logger != nil {
-			h.logger.Error("failed to get category", "error", err)
-		}
+		h.logger.Error("failed to get category", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -92,24 +80,18 @@ func (h *CategoryHandler) GetByID(ctx *gin.Context) {
 func (h *CategoryHandler) Delete(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		if h.logger != nil {
-			h.logger.Warn("invalid id param for delete", "error", err)
-		}
+		h.logger.Warn("invalid id param for delete", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
 
 	if err := h.service.DeleteCategory(uint(id)); err != nil {
 		if errors.Is(err, e.ErrCategoryNotFound) {
-			if h.logger != nil {
-				h.logger.Warn("category not found for delete", "id", id)
-			}
+			h.logger.Warn("category not found for delete", "id", id)
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
-		if h.logger != nil {
-			h.logger.Error("failed to delete category", "error", err)
-		}
+		h.logger.Error("failed to delete category", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
