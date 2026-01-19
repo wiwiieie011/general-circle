@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"net/http"
 	"notification-service/internal/dto"
-	"notification-service/internal/middleware"
 	"notification-service/internal/services"
 	"strconv"
 
@@ -25,7 +24,6 @@ func NewNotificationHandler(srv services.NotificationService, log *slog.Logger) 
 
 func (h *NotificationHandler) RegisterRoutes(r *gin.Engine) {
 	notification := r.Group("/notifications")
-	notification.Use(middleware.JWTAuth())
 	{
 		notification.GET("", h.GetAllNotifications)
 		notification.PUT("/:id/read", h.ReadNotificationByID)
@@ -37,8 +35,6 @@ func (h *NotificationHandler) RegisterRoutes(r *gin.Engine) {
 	}
 }
 
-
-
 func (h *NotificationHandler) GetAllNotifications(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 
@@ -49,7 +45,7 @@ func (h *NotificationHandler) GetAllNotifications(ctx *gin.Context) {
 			"invalid limit parameter",
 			"userID", userID,
 			"limit", limitStr,
-		)	
+		)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit"})
 		return
 	}
@@ -108,7 +104,6 @@ func (h *NotificationHandler) ReadAllNotification(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "all notifications marked as read"})
 }
 
-
 func (h *NotificationHandler) ReadNotificationByID(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 
@@ -134,7 +129,6 @@ func (h *NotificationHandler) ReadNotificationByID(ctx *gin.Context) {
 		return
 	}
 
-	
 	h.log.Info(
 		"notification marked as read",
 		"userID", userID,
@@ -142,7 +136,6 @@ func (h *NotificationHandler) ReadNotificationByID(ctx *gin.Context) {
 	)
 	ctx.JSON(http.StatusOK, gin.H{"message": "notification marked as read"})
 }
-
 
 func (h *NotificationHandler) DeleteNotification(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
@@ -177,7 +170,6 @@ func (h *NotificationHandler) DeleteNotification(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "notification deleted"})
 }
 
-
 func (h *NotificationHandler) GetNotificationsPreferences(ctx *gin.Context) {
 	userID := ctx.GetUint("user_id")
 
@@ -199,8 +191,6 @@ func (h *NotificationHandler) GetNotificationsPreferences(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, settings)
 }
 
-
-
 func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
 
 	userID := ctx.GetUint("user_id")
@@ -216,7 +206,7 @@ func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
 		return
 	}
 
-	settings, err := h.srv.Update(userID,req)
+	settings, err := h.srv.Update(userID, req)
 	if err != nil {
 		h.log.Warn(
 			"failed to update notification preferences",
@@ -227,7 +217,7 @@ func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
 		return
 	}
 
-		h.log.Info(
+	h.log.Info(
 		"notification preferences updated",
 		"userID", userID,
 	)
