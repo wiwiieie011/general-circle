@@ -3,6 +3,7 @@ package middleware
 import (
 	"gateway/jwtutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -28,8 +29,8 @@ func JWTAuth() gin.HandlerFunc {
 			return
 		}
 
-		c.Set("user_id", claims.UserID)
-
+		c.Request.Header.Set("X-User-Id", strconv.FormatUint(uint64(claims.UserID), 10))
 		c.Next()
 	}
 }
+
