@@ -1,11 +1,17 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"notification-service/internal/dto"
 	"notification-service/internal/models"
 	"notification-service/internal/repository"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type NotificationService interface {
@@ -21,12 +27,14 @@ type NotificationService interface {
 
 type notificationService struct {
 	notificationRepo repository.NotificationRepo
+	redis            *redis.Client
 	log              *slog.Logger
 }
 
-func NewNotificationService(notificationRepo repository.NotificationRepo, log *slog.Logger) NotificationService {
+func NewNotificationService(notificationRepo repository.NotificationRepo, log *slog.Logger, redis *redis.Client) NotificationService {
 	return &notificationService{
 		notificationRepo: notificationRepo,
+		redis:            redis,
 		log:              log,
 	}
 }
@@ -58,29 +66,34 @@ func (s *notificationService) CreateNotificationInternal(notification *models.No
 }
 
 func (s *notificationService) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
+	ctx := context.Background()
 	if userID == 0 {
 		s.log.Warn("get notifications unauthorized")
 		return nil, dto.ErrUnauthorized
 	}
 
+	cacheKey := fmt.Sprintf("notifications:%d:%d:%d", userID, limit, lastID)
+
+	// пробуем взять из Redis
+	cached, err := s.redis.Get(ctx, cacheKey).Result()
+	if err == nil && cached != "" {
+		var nots []models.Notification
+		_ = json.Unmarshal([]byte(cached), &nots)
+		return nots, nil
+	}
+
+	// если нет в кэше, идем в репо
 	nots, err := s.notificationRepo.GetNotifications(userID, limit, lastID)
 	if err != nil {
-		s.log.Error(
-			"failed to get notifications",
-			"error", err,
-			"userID", userID,
-			"limit", limit,
-			"lastID", lastID,
-		)
+		s.log.Error("failed to get notifications", "error", err, "userID", userID)
 		return nil, err
 	}
 
-	s.log.Info(
-		"notifications fetched",
-		"userID", userID,
-		"count", len(nots),
-	)
+	// кладём в Redis на 1 минуту
+	data, _ := json.Marshal(nots)
+	_ = s.redis.Set(ctx, cacheKey, data, time.Minute).Err()
 
+	s.log.Info("notifications fetched", "userID", userID, "count", len(nots))
 	return nots, nil
 }
 

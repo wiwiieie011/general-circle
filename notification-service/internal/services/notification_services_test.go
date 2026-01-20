@@ -6,56 +6,83 @@ import (
 	"log/slog"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"notification-service/internal/dto"
 	"notification-service/internal/models"
+
+	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/require"
 )
 
 type mockRepo struct {
-	CreateFn                    func(*models.Notification) error
-	GetNotificationsFn          func(userID uint, limit int, lastID uint) ([]models.Notification, error)
-	AllReadFn                   func(userID uint) error
-	ReadNotificationsByIDFn     func(userID, id uint) error
-	DeleteNotificationsByIDFn   func(userID, id uint) error
-	GetNotificationPreferencesFn func(userID uint) (*models.NotificationPreference, error)
+	CreateFn                        func(*models.Notification) error
+	GetNotificationsFn              func(userID uint, limit int, lastID uint) ([]models.Notification, error)
+	AllReadFn                       func(userID uint) error
+	ReadNotificationsByIDFn         func(userID, id uint) error
+	DeleteNotificationsByIDFn       func(userID, id uint) error
+	GetNotificationPreferencesFn    func(userID uint) (*models.NotificationPreference, error)
 	UpdateNotificationPreferencesFn func(*models.NotificationPreference) error
-	UnreadNotificationsCountsFn func(userID uint) (int64, error)
+	UnreadNotificationsCountsFn     func(userID uint) (int64, error)
 }
 
-func (m *mockRepo) Create(n *models.Notification) error { return m.callCreate(n) }
+func (m *mockRepo) Create(n *models.Notification) error {
+	return m.callCreate(n)
+}
+
 func (m *mockRepo) callCreate(n *models.Notification) error {
-	if m.CreateFn != nil { return m.CreateFn(n) }
+	if m.CreateFn != nil {
+		return m.CreateFn(n)
+	}
 	return nil
 }
 func (m *mockRepo) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
-	if m.GetNotificationsFn != nil { return m.GetNotificationsFn(userID, limit, lastID) }
+	if m.GetNotificationsFn != nil {
+		return m.GetNotificationsFn(userID, limit, lastID)
+	}
 	return nil, nil
 }
-func (m *mockRepo) AllRead(userID uint) error { if m.AllReadFn != nil { return m.AllReadFn(userID) }; return nil }
+func (m *mockRepo) AllRead(userID uint) error {
+	if m.AllReadFn != nil {
+		return m.AllReadFn(userID)
+	}
+	return nil
+}
 func (m *mockRepo) ReadNotificationsByID(userID, id uint) error {
-	if m.ReadNotificationsByIDFn != nil { return m.ReadNotificationsByIDFn(userID, id) }
+	if m.ReadNotificationsByIDFn != nil {
+		return m.ReadNotificationsByIDFn(userID, id)
+	}
 	return nil
 }
 func (m *mockRepo) DeleteNotificationsByID(userID, id uint) error {
-	if m.DeleteNotificationsByIDFn != nil { return m.DeleteNotificationsByIDFn(userID, id) }
+	if m.DeleteNotificationsByIDFn != nil {
+		return m.DeleteNotificationsByIDFn(userID, id)
+	}
 	return nil
 }
 func (m *mockRepo) GetNotificationPreferences(userID uint) (*models.NotificationPreference, error) {
-	if m.GetNotificationPreferencesFn != nil { return m.GetNotificationPreferencesFn(userID) }
+	if m.GetNotificationPreferencesFn != nil {
+		return m.GetNotificationPreferencesFn(userID)
+	}
 	return &models.NotificationPreference{UserID: userID}, nil
 }
 func (m *mockRepo) UpdateNotificationPreferences(pref *models.NotificationPreference) error {
-	if m.UpdateNotificationPreferencesFn != nil { return m.UpdateNotificationPreferencesFn(pref) }
+	if m.UpdateNotificationPreferencesFn != nil {
+		return m.UpdateNotificationPreferencesFn(pref)
+	}
 	return nil
 }
 func (m *mockRepo) UnreadNotificationsCounts(userID uint) (int64, error) {
-	if m.UnreadNotificationsCountsFn != nil { return m.UnreadNotificationsCountsFn(userID) }
+	if m.UnreadNotificationsCountsFn != nil {
+		return m.UnreadNotificationsCountsFn(userID)
+	}
 	return 0, nil
 }
 
 func newSvc(m *mockRepo) NotificationService {
 	log := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{}))
-	return NewNotificationService(m, log)
+	mockRedis := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379", // или тестовый Redis
+	})
+	return NewNotificationService(m, log, mockRedis)
 }
 
 func TestService_CreateNotificationInternal(t *testing.T) {

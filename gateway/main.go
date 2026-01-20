@@ -9,6 +9,7 @@ import (
 func main() {
 	r := gin.Default()
 
+	r.Any("/api/auth/*any", proxyToService("http://localhost:8081"))
 	r.Use(middleware.JWTAuth())
 	r.Any("/api/user/*any", proxyToService("http://localhost:8081"))
 	r.Any("/api/ticket/*any", proxyToService("http://localhost:8082"))
