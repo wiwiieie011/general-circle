@@ -1,61 +1,88 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"io"
 	"log/slog"
 	"testing"
 
-	"github.com/stretchr/testify/require"
 	"notification-service/internal/dto"
 	"notification-service/internal/models"
+
+	"github.com/stretchr/testify/require"
 )
 
 type mockRepo struct {
-	CreateFn                    func(*models.Notification) error
-	GetNotificationsFn          func(userID uint, limit int, lastID uint) ([]models.Notification, error)
-	AllReadFn                   func(userID uint) error
-	ReadNotificationsByIDFn     func(userID, id uint) error
-	DeleteNotificationsByIDFn   func(userID, id uint) error
-	GetNotificationPreferencesFn func(userID uint) (*models.NotificationPreference, error)
+	CreateFn                        func(*models.Notification) error
+	GetNotificationsFn              func(userID uint, limit int, lastID uint) ([]models.Notification, error)
+	AllReadFn                       func(userID uint) error
+	ReadNotificationsByIDFn         func(userID, id uint) error
+	DeleteNotificationsByIDFn       func(userID, id uint) error
+	GetNotificationPreferencesFn    func(userID uint) (*models.NotificationPreference, error)
 	UpdateNotificationPreferencesFn func(*models.NotificationPreference) error
-	UnreadNotificationsCountsFn func(userID uint) (int64, error)
+	UnreadNotificationsCountsFn     func(userID uint) (int64, error)
 }
 
-func (m *mockRepo) Create(n *models.Notification) error { return m.callCreate(n) }
+func (m *mockRepo) Create(n *models.Notification) error {
+	return m.callCreate(n)
+}
+
 func (m *mockRepo) callCreate(n *models.Notification) error {
-	if m.CreateFn != nil { return m.CreateFn(n) }
+	if m.CreateFn != nil {
+		return m.CreateFn(n)
+	}
 	return nil
 }
+
 func (m *mockRepo) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
-	if m.GetNotificationsFn != nil { return m.GetNotificationsFn(userID, limit, lastID) }
+	if m.GetNotificationsFn != nil {
+		return m.GetNotificationsFn(userID, limit, lastID)
+	}
 	return nil, nil
 }
-func (m *mockRepo) AllRead(userID uint) error { if m.AllReadFn != nil { return m.AllReadFn(userID) }; return nil }
+
+func (m *mockRepo) AllRead(userID uint) error {
+	if m.AllReadFn != nil {
+		return m.AllReadFn(userID)
+	}
+	return nil
+}
 func (m *mockRepo) ReadNotificationsByID(userID, id uint) error {
-	if m.ReadNotificationsByIDFn != nil { return m.ReadNotificationsByIDFn(userID, id) }
+	if m.ReadNotificationsByIDFn != nil {
+		return m.ReadNotificationsByIDFn(userID, id)
+	}
 	return nil
 }
 func (m *mockRepo) DeleteNotificationsByID(userID, id uint) error {
-	if m.DeleteNotificationsByIDFn != nil { return m.DeleteNotificationsByIDFn(userID, id) }
+	if m.DeleteNotificationsByIDFn != nil {
+		return m.DeleteNotificationsByIDFn(userID, id)
+	}
 	return nil
 }
 func (m *mockRepo) GetNotificationPreferences(userID uint) (*models.NotificationPreference, error) {
-	if m.GetNotificationPreferencesFn != nil { return m.GetNotificationPreferencesFn(userID) }
+	if m.GetNotificationPreferencesFn != nil {
+		return m.GetNotificationPreferencesFn(userID)
+	}
 	return &models.NotificationPreference{UserID: userID}, nil
 }
+
 func (m *mockRepo) UpdateNotificationPreferences(pref *models.NotificationPreference) error {
-	if m.UpdateNotificationPreferencesFn != nil { return m.UpdateNotificationPreferencesFn(pref) }
+	if m.UpdateNotificationPreferencesFn != nil {
+		return m.UpdateNotificationPreferencesFn(pref)
+	}
 	return nil
 }
 func (m *mockRepo) UnreadNotificationsCounts(userID uint) (int64, error) {
-	if m.UnreadNotificationsCountsFn != nil { return m.UnreadNotificationsCountsFn(userID) }
+	if m.UnreadNotificationsCountsFn != nil {
+		return m.UnreadNotificationsCountsFn(userID)
+	}
 	return 0, nil
 }
 
 func newSvc(m *mockRepo) NotificationService {
 	log := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{}))
-	return NewNotificationService(m, log)
+	return NewNotificationService(m, log, nil)
 }
 
 func TestService_CreateNotificationInternal(t *testing.T) {
@@ -84,21 +111,25 @@ func TestService_GetNotifications(t *testing.T) {
 	svc := newSvc(m)
 
 	// unauthorized
-	_, err := svc.GetNotifications(0, 10, 0)
+	_, err := svc.GetNotifications(context.Background(), 0, 10, 0)
 	require.ErrorIs(t, err, dto.ErrUnauthorized)
 
 	// repo error
 	m.GetNotificationsFn = func(userID uint, limit int, lastID uint) ([]models.Notification, error) {
 		return nil, errors.New("db")
 	}
-	_, err = svc.GetNotifications(1, 10, 0)
+	_, err = svc.GetNotifications(context.Background(), 1, 10, 0)
 	require.Error(t, err)
 
 	// success
 	m.GetNotificationsFn = func(userID uint, limit int, lastID uint) ([]models.Notification, error) {
-		return []models.Notification{{Model: models.Model{ID: 2}}, {Model: models.Model{ID: 1}}}, nil
+		return []models.Notification{
+			{Model: models.Model{ID: 2}},
+			{Model: models.Model{ID: 1}},
+		}, nil
 	}
-	list, err := svc.GetNotifications(2, 10, 0)
+
+	list, err := svc.GetNotifications(context.Background(), 2, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, list, 2)
 }

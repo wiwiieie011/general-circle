@@ -1,16 +1,22 @@
 package services
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"notification-service/internal/dto"
 	"notification-service/internal/models"
 	"notification-service/internal/repository"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type NotificationService interface {
 	CreateNotificationInternal(notification *models.Notification) error
-	GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error)
+	GetNotifications(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error)
 	CheckAll(userID uint) error
 	CheckNotificationsByID(userID, id uint) error
 	DeleteNotificationByID(userID, id uint) error
@@ -21,12 +27,14 @@ type NotificationService interface {
 
 type notificationService struct {
 	notificationRepo repository.NotificationRepo
+	redis            *redis.Client
 	log              *slog.Logger
 }
 
-func NewNotificationService(notificationRepo repository.NotificationRepo, log *slog.Logger) NotificationService {
+func NewNotificationService(notificationRepo repository.NotificationRepo, log *slog.Logger, redis *redis.Client) NotificationService {
 	return &notificationService{
 		notificationRepo: notificationRepo,
+		redis:            redis,
 		log:              log,
 	}
 }
@@ -57,30 +65,44 @@ func (s *notificationService) CreateNotificationInternal(notification *models.No
 	return nil
 }
 
-func (s *notificationService) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
+func (s *notificationService) GetNotifications(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
+
 	if userID == 0 {
 		s.log.Warn("get notifications unauthorized")
 		return nil, dto.ErrUnauthorized
 	}
 
+	if lastID == 0 {
+		cacheKey := fmt.Sprintf("notifications:%d:first", userID)
+		cached, err := s.redis.Get(ctx, cacheKey).Result()
+		if err == nil && cached != "" {
+			var nots []models.Notification
+			if err := json.Unmarshal([]byte(cached), &nots); err == nil {
+				s.log.Info("notifications fetched from cache", "userID", userID, "count", len(nots))
+				return nots, nil
+			}
+		}
+		nots, err := s.notificationRepo.GetNotifications(userID, limit, 0)
+		if err != nil {
+			s.log.Error("failed to get notifications", "error", err, "userID", userID)
+			return nil, err
+		}
+
+		data, _ := json.Marshal(nots)
+		_ = s.redis.Set(ctx, cacheKey, data, 5*time.Second).Err()
+
+		s.log.Info("notifications fetched from db and cached", "userID", userID, "count", len(nots))
+		return nots, nil
+	}
+
+	// 🔹 ВСЕ ОСТАЛЬНЫЕ СТРАНИЦЫ — ТОЛЬКО ИЗ БД (БЕЗ КЭША)
 	nots, err := s.notificationRepo.GetNotifications(userID, limit, lastID)
 	if err != nil {
-		s.log.Error(
-			"failed to get notifications",
-			"error", err,
-			"userID", userID,
-			"limit", limit,
-			"lastID", lastID,
-		)
+		s.log.Error("failed to get notifications", "error", err, "userID", userID, "lastID", lastID)
 		return nil, err
 	}
 
-	s.log.Info(
-		"notifications fetched",
-		"userID", userID,
-		"count", len(nots),
-	)
-
+	s.log.Info("notifications fetched from db (no cache)", "userID", userID, "count", len(nots))
 	return nots, nil
 }
 

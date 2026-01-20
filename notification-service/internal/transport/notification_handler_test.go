@@ -2,6 +2,7 @@ package transport
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -9,47 +10,73 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 	"notification-service/internal/dto"
 	"notification-service/internal/models"
 	"notification-service/internal/services"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 )
 
 type mockService struct {
-	CreateNotificationInternalFn      func(*models.Notification) error
-	GetNotificationsFn                func(userID uint, limit int, lastID uint) ([]models.Notification, error)
-	CheckAllFn                        func(userID uint) error
-	CheckNotificationsByIDFn          func(userID, id uint) error
-	DeleteNotificationByIDFn          func(userID, id uint) error
-	GetNotificationPreferencesFn      func(userID uint) (*models.NotificationPreference, error)
-	UpdateFn                          func(userID uint, req dto.UpdateNotificationPreferencesRequest) (*models.NotificationPreference, error)
-	CountFn                           func(userID uint) (int64, error)
+	CreateNotificationInternalFn func(*models.Notification) error
+	GetNotificationsFn           func(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error)
+	CheckAllFn                   func(userID uint) error
+	CheckNotificationsByIDFn     func(userID, id uint) error
+	DeleteNotificationByIDFn     func(userID, id uint) error
+	GetNotificationPreferencesFn func(userID uint) (*models.NotificationPreference, error)
+	UpdateFn                     func(userID uint, req dto.UpdateNotificationPreferencesRequest) (*models.NotificationPreference, error)
+	CountFn                      func(userID uint) (int64, error)
 }
 
-func (m *mockService) CreateNotificationInternal(n *models.Notification) error { if m.CreateNotificationInternalFn != nil { return m.CreateNotificationInternalFn(n) }; return nil }
-func (m *mockService) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
-	if m.GetNotificationsFn != nil { return m.GetNotificationsFn(userID, limit, lastID) }
+func (m *mockService) CreateNotificationInternal(n *models.Notification) error {
+	if m.CreateNotificationInternalFn != nil {
+		return m.CreateNotificationInternalFn(n)
+	}
+	return nil
+}
+func (m *mockService) GetNotifications(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
+	if m.GetNotificationsFn != nil {
+		return m.GetNotificationsFn(ctx, userID, limit, lastID)
+	}
 	return nil, nil
 }
-func (m *mockService) CheckAll(userID uint) error { if m.CheckAllFn != nil { return m.CheckAllFn(userID) }; return nil }
+func (m *mockService) CheckAll(userID uint) error {
+	if m.CheckAllFn != nil {
+		return m.CheckAllFn(userID)
+	}
+	return nil
+}
 func (m *mockService) CheckNotificationsByID(userID, id uint) error {
-	if m.CheckNotificationsByIDFn != nil { return m.CheckNotificationsByIDFn(userID, id) }
+	if m.CheckNotificationsByIDFn != nil {
+		return m.CheckNotificationsByIDFn(userID, id)
+	}
 	return nil
 }
 func (m *mockService) DeleteNotificationByID(userID, id uint) error {
-	if m.DeleteNotificationByIDFn != nil { return m.DeleteNotificationByIDFn(userID, id) }
+	if m.DeleteNotificationByIDFn != nil {
+		return m.DeleteNotificationByIDFn(userID, id)
+	}
 	return nil
 }
 func (m *mockService) GetNotificationPreferences(userID uint) (*models.NotificationPreference, error) {
-	if m.GetNotificationPreferencesFn != nil { return m.GetNotificationPreferencesFn(userID) }
+	if m.GetNotificationPreferencesFn != nil {
+		return m.GetNotificationPreferencesFn(userID)
+	}
 	return &models.NotificationPreference{UserID: userID}, nil
 }
 func (m *mockService) Update(userID uint, req dto.UpdateNotificationPreferencesRequest) (*models.NotificationPreference, error) {
-	if m.UpdateFn != nil { return m.UpdateFn(userID, req) }
+	if m.UpdateFn != nil {
+		return m.UpdateFn(userID, req)
+	}
 	return &models.NotificationPreference{UserID: userID}, nil
 }
-func (m *mockService) Count(userID uint) (int64, error) { if m.CountFn != nil { return m.CountFn(userID) }; return 0, nil }
+func (m *mockService) Count(userID uint) (int64, error) {
+	if m.CountFn != nil {
+		return m.CountFn(userID)
+	}
+	return 0, nil
+}
 
 func newRouter(ms services.NotificationService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -85,7 +112,9 @@ func TestGetAllNotifications(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
 	// service error -> 500
-	ms.GetNotificationsFn = func(userID uint, limit int, lastID uint) ([]models.Notification, error) { return nil, errorsNew("boom") }
+	ms.GetNotificationsFn = func(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
+		return nil, errorsNew("boom")
+	}
 	req = httptest.NewRequest(http.MethodGet, "/notifications?limit=10", nil)
 	req.Header.Set("X-User-Id", "1")
 	w = httptest.NewRecorder()
@@ -93,7 +122,7 @@ func TestGetAllNotifications(t *testing.T) {
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 
 	// success
-	ms.GetNotificationsFn = func(userID uint, limit int, lastID uint) ([]models.Notification, error) {
+	ms.GetNotificationsFn = func(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
 		return []models.Notification{{Model: models.Model{ID: 2}}, {Model: models.Model{ID: 1}}}, nil
 	}
 	req = httptest.NewRequest(http.MethodGet, "/notifications?limit=10", nil)
@@ -101,6 +130,28 @@ func TestGetAllNotifications(t *testing.T) {
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestGetAllNotifications_PaginationParams(t *testing.T) {
+	ms := &mockService{}
+	r := newRouter(ms)
+
+	// verify that limit and last_id are parsed and passed to service
+	called := false
+	ms.GetNotificationsFn = func(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
+		called = true
+		require.Equal(t, uint(7), userID)
+		require.Equal(t, 3, limit)
+		require.Equal(t, uint(10), lastID)
+		return []models.Notification{}, nil
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/notifications?limit=3&last_id=10", nil)
+	req.Header.Set("X-User-Id", "7")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	require.True(t, called)
 }
 
 func TestReadAllNotification(t *testing.T) {
@@ -240,7 +291,9 @@ func TestGetAndUpdatePreferences(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
 	// update service error -> 403
-	ms.UpdateFn = func(userID uint, req dto.UpdateNotificationPreferencesRequest) (*models.NotificationPreference, error) { return nil, errorsNew("denied") }
+	ms.UpdateFn = func(userID uint, req dto.UpdateNotificationPreferencesRequest) (*models.NotificationPreference, error) {
+		return nil, errorsNew("denied")
+	}
 	body, _ := json.Marshal(dto.UpdateNotificationPreferencesRequest{PushEnabled: boolPtr(true)})
 	req = httptest.NewRequest(http.MethodPatch, "/notifications/preferences", bytes.NewBuffer(body))
 	req.Header.Set("X-User-Id", "1")
@@ -294,5 +347,7 @@ func boolPtr(b bool) *bool { return &b }
 
 // local error helper to avoid importing fmt
 func errorsNew(msg string) error { return &simpleErr{msg: msg} }
+
 type simpleErr struct{ msg string }
+
 func (e *simpleErr) Error() string { return e.msg }
