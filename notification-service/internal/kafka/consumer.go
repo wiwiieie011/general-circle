@@ -55,11 +55,11 @@ func (c *Consumer) consumeTopic(topic string) {
 	for {
 		m, err := r.ReadMessage(c.ctx)
 		if err != nil {
-			c.log.Warn("failed to read message:", err)
+			c.log.Warn("failed to read message", "error", err)
 			continue
 		}
 
-		c.log.Info("Received message from topic %s: %s\n", topic, string(m.Value))
+		c.log.Info("received message", "topic", topic, "value", string(m.Value))
 
 		switch topic {
 		case "ticket.purchased":
@@ -76,7 +76,7 @@ func (c *Consumer) consumeTopic(topic string) {
 func (c *Consumer) handleTicketPurchased(payload []byte) {
 	var evt dto.TicketPurchasedEvent
 	if err := json.Unmarshal(payload, &evt); err != nil {
-		c.log.Error("failed to unmarshal ticket purchased:", err)
+		c.log.Error("failed to unmarshal ticket purchased", "error", err)
 		return
 	}
 
@@ -103,14 +103,14 @@ func (c *Consumer) handleTicketPurchased(payload []byte) {
 	}
 
 	if err := c.srv.CreateNotificationInternal(notification); err != nil {
-		c.log.Error("failed to create notification:", err)
+		c.log.Error("failed to create notification", "error", err)
 	}
 }
 
 func (c *Consumer) handleEventCancelled(payload []byte) {
 	var evt dto.EventCancelledEvent
 	if err := json.Unmarshal(payload, &evt); err != nil {
-		c.log.Error("failed to unmarshal event reminder:", err)
+		c.log.Error("failed to unmarshal event cancelled", "error", err)
 		return
 	}
 
@@ -118,7 +118,7 @@ func (c *Consumer) handleEventCancelled(payload []byte) {
 
 		pref, err := c.srv.GetNotificationPreferences(userID)
 		if err != nil {
-			c.log.Error("failed to load preferences", "user_id", userID)
+			c.log.Error("failed to load preferences", "user_id", userID, "error", err)
 			continue
 		}
 
@@ -134,14 +134,14 @@ func (c *Consumer) handleEventCancelled(payload []byte) {
 			Body:    fmt.Sprintf("Мероприятие %s отменено", evt.EventTitle),
 		}
 		if err := c.srv.CreateNotificationInternal(notification); err != nil {
-			c.log.Error("failed to create  notification:", err)
+			c.log.Error("failed to create notification", "error", err)
 		}
 	}
 }
 func (c *Consumer) handleEventReminder(payload []byte) {
 	var evt dto.EventReminder
 	if err := json.Unmarshal(payload, &evt); err != nil {
-		c.log.Error("failed to unmarshal event cancelled:", err)
+		c.log.Error("failed to unmarshal event reminder", "error", err)
 		return
 	}
 
@@ -149,7 +149,7 @@ func (c *Consumer) handleEventReminder(payload []byte) {
 
 		pref, err := c.srv.GetNotificationPreferences(userID)
 		if err != nil {
-			c.log.Error("failed to load preferences", "user_id", userID)
+			c.log.Error("failed to load preferences", "user_id", userID, "error", err)
 			continue
 		}
 
@@ -164,7 +164,7 @@ func (c *Consumer) handleEventReminder(payload []byte) {
 			Body:    fmt.Sprintf("Завтра состоится мероприятие %s", evt.EventTitle),
 		}
 		if err := c.srv.CreateNotificationInternal(notification); err != nil {
-			c.log.Error("failed to create  notification:", err)
+			c.log.Error("failed to create notification", "error", err)
 		}
 	}
 }
