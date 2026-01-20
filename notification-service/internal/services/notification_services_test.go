@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"io"
 	"log/slog"
@@ -9,7 +10,6 @@ import (
 	"notification-service/internal/dto"
 	"notification-service/internal/models"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,12 +34,14 @@ func (m *mockRepo) callCreate(n *models.Notification) error {
 	}
 	return nil
 }
+
 func (m *mockRepo) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
 	if m.GetNotificationsFn != nil {
 		return m.GetNotificationsFn(userID, limit, lastID)
 	}
 	return nil, nil
 }
+
 func (m *mockRepo) AllRead(userID uint) error {
 	if m.AllReadFn != nil {
 		return m.AllReadFn(userID)
@@ -64,6 +66,7 @@ func (m *mockRepo) GetNotificationPreferences(userID uint) (*models.Notification
 	}
 	return &models.NotificationPreference{UserID: userID}, nil
 }
+
 func (m *mockRepo) UpdateNotificationPreferences(pref *models.NotificationPreference) error {
 	if m.UpdateNotificationPreferencesFn != nil {
 		return m.UpdateNotificationPreferencesFn(pref)
@@ -79,10 +82,7 @@ func (m *mockRepo) UnreadNotificationsCounts(userID uint) (int64, error) {
 
 func newSvc(m *mockRepo) NotificationService {
 	log := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{}))
-	mockRedis := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379", // или тестовый Redis
-	})
-	return NewNotificationService(m, log, mockRedis)
+	return NewNotificationService(m, log, nil)
 }
 
 func TestService_CreateNotificationInternal(t *testing.T) {
@@ -111,21 +111,25 @@ func TestService_GetNotifications(t *testing.T) {
 	svc := newSvc(m)
 
 	// unauthorized
-	_, err := svc.GetNotifications(0, 10, 0)
+	_, err := svc.GetNotifications(context.Background(), 0, 10, 0)
 	require.ErrorIs(t, err, dto.ErrUnauthorized)
 
 	// repo error
 	m.GetNotificationsFn = func(userID uint, limit int, lastID uint) ([]models.Notification, error) {
 		return nil, errors.New("db")
 	}
-	_, err = svc.GetNotifications(1, 10, 0)
+	_, err = svc.GetNotifications(context.Background(), 1, 10, 0)
 	require.Error(t, err)
 
 	// success
 	m.GetNotificationsFn = func(userID uint, limit int, lastID uint) ([]models.Notification, error) {
-		return []models.Notification{{Model: models.Model{ID: 2}}, {Model: models.Model{ID: 1}}}, nil
+		return []models.Notification{
+			{Model: models.Model{ID: 2}},
+			{Model: models.Model{ID: 1}},
+		}, nil
 	}
-	list, err := svc.GetNotifications(2, 10, 0)
+
+	list, err := svc.GetNotifications(context.Background(), 2, 10, 0)
 	require.NoError(t, err)
 	require.Len(t, list, 2)
 }

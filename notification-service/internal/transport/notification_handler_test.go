@@ -2,6 +2,7 @@ package transport
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -19,7 +20,7 @@ import (
 
 type mockService struct {
 	CreateNotificationInternalFn func(*models.Notification) error
-	GetNotificationsFn           func(userID uint, limit int, lastID uint) ([]models.Notification, error)
+	GetNotificationsFn           func(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error)
 	CheckAllFn                   func(userID uint) error
 	CheckNotificationsByIDFn     func(userID, id uint) error
 	DeleteNotificationByIDFn     func(userID, id uint) error
@@ -34,9 +35,9 @@ func (m *mockService) CreateNotificationInternal(n *models.Notification) error {
 	}
 	return nil
 }
-func (m *mockService) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
+func (m *mockService) GetNotifications(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
 	if m.GetNotificationsFn != nil {
-		return m.GetNotificationsFn(userID, limit, lastID)
+		return m.GetNotificationsFn(ctx, userID, limit, lastID)
 	}
 	return nil, nil
 }
@@ -111,7 +112,7 @@ func TestGetAllNotifications(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, w.Code)
 
 	// service error -> 500
-	ms.GetNotificationsFn = func(userID uint, limit int, lastID uint) ([]models.Notification, error) {
+	ms.GetNotificationsFn = func(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
 		return nil, errorsNew("boom")
 	}
 	req = httptest.NewRequest(http.MethodGet, "/notifications?limit=10", nil)
@@ -121,7 +122,7 @@ func TestGetAllNotifications(t *testing.T) {
 	require.Equal(t, http.StatusInternalServerError, w.Code)
 
 	// success
-	ms.GetNotificationsFn = func(userID uint, limit int, lastID uint) ([]models.Notification, error) {
+	ms.GetNotificationsFn = func(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
 		return []models.Notification{{Model: models.Model{ID: 2}}, {Model: models.Model{ID: 1}}}, nil
 	}
 	req = httptest.NewRequest(http.MethodGet, "/notifications?limit=10", nil)
@@ -129,6 +130,28 @@ func TestGetAllNotifications(t *testing.T) {
 	w = httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestGetAllNotifications_PaginationParams(t *testing.T) {
+	ms := &mockService{}
+	r := newRouter(ms)
+
+	// verify that limit and last_id are parsed and passed to service
+	called := false
+	ms.GetNotificationsFn = func(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
+		called = true
+		require.Equal(t, uint(7), userID)
+		require.Equal(t, 3, limit)
+		require.Equal(t, uint(10), lastID)
+		return []models.Notification{}, nil
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/notifications?limit=3&last_id=10", nil)
+	req.Header.Set("X-User-Id", "7")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	require.Equal(t, http.StatusOK, w.Code)
+	require.True(t, called)
 }
 
 func TestReadAllNotification(t *testing.T) {

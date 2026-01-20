@@ -16,7 +16,7 @@ import (
 
 type NotificationService interface {
 	CreateNotificationInternal(notification *models.Notification) error
-	GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error)
+	GetNotifications(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error)
 	CheckAll(userID uint) error
 	CheckNotificationsByID(userID, id uint) error
 	DeleteNotificationByID(userID, id uint) error
@@ -65,35 +65,44 @@ func (s *notificationService) CreateNotificationInternal(notification *models.No
 	return nil
 }
 
-func (s *notificationService) GetNotifications(userID uint, limit int, lastID uint) ([]models.Notification, error) {
-	ctx := context.Background()
+func (s *notificationService) GetNotifications(ctx context.Context, userID uint, limit int, lastID uint) ([]models.Notification, error) {
+
 	if userID == 0 {
 		s.log.Warn("get notifications unauthorized")
 		return nil, dto.ErrUnauthorized
 	}
 
-	cacheKey := fmt.Sprintf("notifications:%d:%d:%d", userID, limit, lastID)
+	if lastID == 0 {
+		cacheKey := fmt.Sprintf("notifications:%d:first", userID)
+		cached, err := s.redis.Get(ctx, cacheKey).Result()
+		if err == nil && cached != "" {
+			var nots []models.Notification
+			if err := json.Unmarshal([]byte(cached), &nots); err == nil {
+				s.log.Info("notifications fetched from cache", "userID", userID, "count", len(nots))
+				return nots, nil
+			}
+		}
+		nots, err := s.notificationRepo.GetNotifications(userID, limit, 0)
+		if err != nil {
+			s.log.Error("failed to get notifications", "error", err, "userID", userID)
+			return nil, err
+		}
 
-	// пробуем взять из Redis
-	cached, err := s.redis.Get(ctx, cacheKey).Result()
-	if err == nil && cached != "" {
-		var nots []models.Notification
-		_ = json.Unmarshal([]byte(cached), &nots)
+		data, _ := json.Marshal(nots)
+		_ = s.redis.Set(ctx, cacheKey, data, 5*time.Second).Err()
+
+		s.log.Info("notifications fetched from db and cached", "userID", userID, "count", len(nots))
 		return nots, nil
 	}
 
-	// если нет в кэше, идем в репо
+	// 🔹 ВСЕ ОСТАЛЬНЫЕ СТРАНИЦЫ — ТОЛЬКО ИЗ БД (БЕЗ КЭША)
 	nots, err := s.notificationRepo.GetNotifications(userID, limit, lastID)
 	if err != nil {
-		s.log.Error("failed to get notifications", "error", err, "userID", userID)
+		s.log.Error("failed to get notifications", "error", err, "userID", userID, "lastID", lastID)
 		return nil, err
 	}
 
-	// кладём в Redis на 1 минуту
-	data, _ := json.Marshal(nots)
-	_ = s.redis.Set(ctx, cacheKey, data, time.Minute).Err()
-
-	s.log.Info("notifications fetched", "userID", userID, "count", len(nots))
+	s.log.Info("notifications fetched from db (no cache)", "userID", userID, "count", len(nots))
 	return nots, nil
 }
 

@@ -77,7 +77,7 @@ func (h *NotificationHandler) GetAllNotifications(ctx *gin.Context) {
 		lastID = uint(val)
 	}
 
-	list, err := h.srv.GetNotifications(userID, limit, lastID)
+	list, err := h.srv.GetNotifications(ctx.Request.Context(), userID, limit, lastID)
 	if err != nil {
 		h.log.Error("failed to get notifications", "userID", userID, "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
