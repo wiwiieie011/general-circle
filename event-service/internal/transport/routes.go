@@ -14,9 +14,9 @@ func RegisterRoutes(
 	scheduleService services.EventScheduleService,
 	categoryService services.CategoryService,
 ) {
-	eventHandler := NewEventHandler(eventService)
-	scheduleHandler := NewEventScheduleHandler(scheduleService)
-	categoryHandler := NewCategoryHandler(categoryService)
+	eventHandler := NewEventHandler(eventService, log)
+	scheduleHandler := NewEventScheduleHandler(scheduleService, log)
+	categoryHandler := NewCategoryHandler(categoryService, log)
 
 	eventHandler.RegisterRoutes(router)
 	scheduleHandler.RegisterRoutes(router)

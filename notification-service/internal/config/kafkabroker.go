@@ -1,5 +1,7 @@
 package config
 
+import "os"
+
 func KafkaBrokers() []string {
-	return []string{"localhost:9092"}
+	return []string{os.Getenv("KAFKA_BROKERS")}
 }

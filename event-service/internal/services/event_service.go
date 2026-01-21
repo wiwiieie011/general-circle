@@ -45,9 +45,17 @@ func NewEventService(
 }
 
 func (s *eventService) CreateEvent(req dto.CreateEventRequest) (*models.Event, error) {
+	s.logger.Debug("CreateEvent called",
+		slog.String("title", req.Title),
+		slog.Int("user_id", int(req.UserID)),
+	)
+	if req.CategoryID != nil {
+		s.logger.Debug("CreateEvent has category", slog.Int("category_id", int(*req.CategoryID)))
+	}
 	if req.CategoryID != nil {
 		_, err := s.categoryRepo.GetByID(*req.CategoryID)
 		if err != nil {
+			s.logger.Warn("category not found on create event", "category_id", *req.CategoryID)
 			return nil, e.ErrCategoryNotFound
 		}
 	}
@@ -61,34 +69,50 @@ func (s *eventService) CreateEvent(req dto.CreateEventRequest) (*models.Event, e
 	}
 
 	if err := s.eventRepo.Create(event); err != nil {
+		s.logger.Error("failed to create event", "error", err, "title", event.Title)
 		return nil, err
 	}
+	s.logger.Info("event created", slog.Int("id", int(event.ID)), slog.String("title", event.Title))
 	return event, nil
 }
 
 func (s *eventService) GetEvent(id uint) (*models.Event, error) {
+	s.logger.Debug("GetEvent called", slog.Int("id", int(id)))
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
+		s.logger.Warn("event not found", "id", id)
 		return nil, e.ErrEventNotFound
 	}
+	s.logger.Debug("event loaded", slog.Int("id", int(event.ID)), slog.String("title", event.Title))
 	return event, nil
 }
 
 func (s *eventService) DeleteEvent(id uint) error {
+	s.logger.Debug("DeleteEvent called", slog.Int("id", int(id)))
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
+		s.logger.Warn("event not found for delete", "id", id)
 		return e.ErrEventNotFound
 	}
 
 	if event.Status != string(dto.Draft) {
+		s.logger.Warn("attempt to delete non-draft event", "id", id, "status", event.Status)
 		return e.ErrEventIsNotDraft
 	}
-	return s.eventRepo.Delete(id)
+
+	if err := s.eventRepo.Delete(id); err != nil {
+		s.logger.Error("failed to delete event", "error", err, "id", id)
+		return err
+	}
+	s.logger.Info("event deleted", slog.Int("id", int(id)))
+	return nil
 }
 
 func (s *eventService) UpdateEvent(req dto.UpdateEventRequest, id uint) (*models.Event, error) {
+	s.logger.Debug("UpdateEvent called", slog.Int("id", int(id)))
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
+		s.logger.Warn("event not found for update", "id", id)
 		return nil, e.ErrEventNotFound
 	}
 
@@ -119,28 +143,45 @@ func (s *eventService) UpdateEvent(req dto.UpdateEventRequest, id uint) (*models
 	}
 
 	if err := s.eventRepo.Update(event); err != nil {
+		s.logger.Error("failed to update event", "error", err, "id", event.ID)
 		return nil, err
 	}
+	s.logger.Info("event updated", slog.Int("id", int(event.ID)), slog.String("title", event.Title))
 	return event, nil
 }
 
 func (s *eventService) ListEvents(query dto.EventListQuery) ([]models.Event, error) {
-	return s.eventRepo.List(query)
+	s.logger.Debug("ListEvents called", slog.String("title", query.Title), slog.String("status", query.Status))
+	events, err := s.eventRepo.List(query)
+	if err != nil {
+		s.logger.Error("failed to list events", "error", err)
+		return nil, err
+	}
+	s.logger.Debug("ListEvents result", slog.Int("count", len(events)))
+	return events, nil
 }
 
 func (s *eventService) PublishEvent(id uint) error {
+	s.logger.Debug("PublishEvent called", slog.Int("id", int(id)))
 	event, err := s.eventRepo.GetByID(id)
 	if err != nil {
+		s.logger.Warn("event not found for publish", "id", id)
 		return e.ErrEventNotFound
 	}
 
 	if event.Status != string(dto.Draft) {
+		s.logger.Warn("attempt to publish non-draft event", "id", id, "status", event.Status)
 		return e.ErrEventIsNotDraft
 	}
 
 	event.Status = string(dto.Published)
 
-	return s.eventRepo.Update(event)
+	if err := s.eventRepo.Update(event); err != nil {
+		s.logger.Error("failed to publish event", "error", err, "id", id)
+		return err
+	}
+	s.logger.Info("event published", slog.Int("id", int(id)))
+	return nil
 }
 
 func (s *eventService) CancelEvent(id uint) error {
@@ -170,7 +211,14 @@ func (s *eventService) CancelEvent(id uint) error {
 }
 
 func (s *eventService) GetEventsByUserID(userID uint) ([]models.Event, error) {
-	return s.eventRepo.GetByUserID(userID)
+	s.logger.Debug("GetEventsByUserID called", slog.Int("user_id", int(userID)))
+	events, err := s.eventRepo.GetByUserID(userID)
+	if err != nil {
+		s.logger.Error("failed to get events by user", "error", err, "user_id", userID)
+		return nil, err
+	}
+	s.logger.Debug("GetEventsByUserID result", slog.Int("count", len(events)), slog.Int("user_id", int(userID)))
+	return events, nil
 }
 
 func (s *eventService) SendEventReminders(ctx context.Context) error {

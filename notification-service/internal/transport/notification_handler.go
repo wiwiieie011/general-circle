@@ -1,10 +1,10 @@
 package transport
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"notification-service/internal/dto"
-	"notification-service/internal/middleware"
 	"notification-service/internal/services"
 	"strconv"
 
@@ -25,7 +25,6 @@ func NewNotificationHandler(srv services.NotificationService, log *slog.Logger) 
 
 func (h *NotificationHandler) RegisterRoutes(r *gin.Engine) {
 	notification := r.Group("/notifications")
-	notification.Use(middleware.JWTAuth())
 	{
 		notification.GET("", h.GetAllNotifications)
 		notification.PUT("/:id/read", h.ReadNotificationByID)
@@ -37,19 +36,32 @@ func (h *NotificationHandler) RegisterRoutes(r *gin.Engine) {
 	}
 }
 
+func getUserID(ctx *gin.Context) (uint, error) {
+	userIDStr := ctx.GetHeader("X-User-Id")
+	if userIDStr == "" {
+		return 0, errors.New("missing X-User-Id header")
+	}
 
+	id, err := strconv.ParseUint(userIDStr, 10, 64)
+	if err != nil {
+		return 0, errors.New("invalid X-User-Id header")
+	}
+
+	return uint(id), nil
+}
 
 func (h *NotificationHandler) GetAllNotifications(ctx *gin.Context) {
-	userID := ctx.GetUint("user_id")
+	userID, err := getUserID(ctx)
+	if err != nil {
+		h.log.Warn("unauthorized request", "error", err)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
 	limitStr := ctx.DefaultQuery("limit", "50")
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit <= 0 {
-		h.log.Warn(
-			"invalid limit parameter",
-			"userID", userID,
-			"limit", limitStr,
-		)	
+		h.log.Warn("invalid limit parameter", "userID", userID, "limit", limitStr)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid limit"})
 		return
 	}
@@ -58,94 +70,73 @@ func (h *NotificationHandler) GetAllNotifications(ctx *gin.Context) {
 	if lastIDStr := ctx.Query("last_id"); lastIDStr != "" {
 		val, err := strconv.ParseUint(lastIDStr, 10, 64)
 		if err != nil {
-			h.log.Warn(
-				"invalid last_id parameter",
-				"userID", userID,
-				"last_id", lastIDStr,
-			)
+			h.log.Warn("invalid last_id parameter", "userID", userID, "last_id", lastIDStr)
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid last_id"})
 			return
 		}
 		lastID = uint(val)
 	}
 
-	list, err := h.srv.GetNotifications(userID, limit, lastID)
+	list, err := h.srv.GetNotifications(ctx.Request.Context(), userID, limit, lastID)
 	if err != nil {
-		h.log.Error(
-			"failed to get notifications",
-			"userID", userID,
-			"error", err,
-		)
+		h.log.Error("failed to get notifications", "userID", userID, "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	h.log.Info(
-		"notifications returned",
-		"userID", userID,
-		"count", len(list),
-	)
+	h.log.Info("notifications returned", "userID", userID, "count", len(list))
 	ctx.JSON(http.StatusOK, list)
 }
 
 func (h *NotificationHandler) ReadAllNotification(ctx *gin.Context) {
-	userID := ctx.GetUint("user_id")
+	userID, err := getUserID(ctx)
+	if err != nil {
+		h.log.Warn("unauthorized request", "error", err)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
 	if err := h.srv.CheckAll(userID); err != nil {
-		h.log.Warn(
-			"failed to mark all notifications as read",
-			"userID", userID,
-			"error", err,
-		)
+		h.log.Warn("failed to mark all notifications as read", "userID", userID, "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	h.log.Info(
-		"all notifications marked as read",
-		"userID", userID,
-	)
+	h.log.Info("all notifications marked as read", "userID", userID)
 	ctx.JSON(http.StatusOK, gin.H{"message": "all notifications marked as read"})
 }
 
-
 func (h *NotificationHandler) ReadNotificationByID(ctx *gin.Context) {
-	userID := ctx.GetUint("user_id")
+	userID, err := getUserID(ctx)
+	if err != nil {
+		h.log.Warn("unauthorized request", "error", err)
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
-		h.log.Warn(
-			"invalid notification id",
-			"userID", userID,
-			"id", ctx.Param("id"),
-		)
+		h.log.Warn("invalid notification id", "userID", userID, "id", ctx.Param("id"))
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid notification id"})
 		return
 	}
 
 	if err := h.srv.CheckNotificationsByID(userID, uint(id)); err != nil {
-		h.log.Warn(
-			"failed to mark notification as read",
-			"userID", userID,
-			"notificationID", id,
-			"error", err,
-		)
+		h.log.Warn("failed to mark notification as read", "userID", userID, "notificationID", id, "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	
-	h.log.Info(
-		"notification marked as read",
-		"userID", userID,
-		"notificationID", id,
-	)
+	h.log.Info("notification marked as read", "userID", userID, "notificationID", id)
 	ctx.JSON(http.StatusOK, gin.H{"message": "notification marked as read"})
 }
 
-
 func (h *NotificationHandler) DeleteNotification(ctx *gin.Context) {
-	userID := ctx.GetUint("user_id")
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 64)
 	if err != nil {
@@ -177,9 +168,12 @@ func (h *NotificationHandler) DeleteNotification(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "notification deleted"})
 }
 
-
 func (h *NotificationHandler) GetNotificationsPreferences(ctx *gin.Context) {
-	userID := ctx.GetUint("user_id")
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
 	settings, err := h.srv.GetNotificationPreferences(userID)
 	if err != nil {
@@ -199,11 +193,13 @@ func (h *NotificationHandler) GetNotificationsPreferences(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, settings)
 }
 
-
-
 func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
 
-	userID := ctx.GetUint("user_id")
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
 	var req dto.UpdateNotificationPreferencesRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -216,7 +212,7 @@ func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
 		return
 	}
 
-	settings, err := h.srv.Update(userID,req)
+	settings, err := h.srv.Update(userID, req)
 	if err != nil {
 		h.log.Warn(
 			"failed to update notification preferences",
@@ -227,7 +223,7 @@ func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
 		return
 	}
 
-		h.log.Info(
+	h.log.Info(
 		"notification preferences updated",
 		"userID", userID,
 	)
@@ -236,7 +232,11 @@ func (h *NotificationHandler) UpdateNotificationPreferences(ctx *gin.Context) {
 }
 
 func (h *NotificationHandler) Count(ctx *gin.Context) {
-	userID := ctx.GetUint("user_id")
+	userID, err := getUserID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 
 	count, err := h.srv.Count(userID)
 	if err != nil {

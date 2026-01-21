@@ -5,17 +5,20 @@ import (
 	"event-service/internal/dto"
 	e "event-service/internal/errors"
 	"event-service/internal/services"
-	"github.com/gin-gonic/gin"
+	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
 
 type CategoryHandler struct {
 	service services.CategoryService
+	logger  *slog.Logger
 }
 
-func NewCategoryHandler(service services.CategoryService) *CategoryHandler {
-	return &CategoryHandler{service: service}
+func NewCategoryHandler(service services.CategoryService, logger *slog.Logger) *CategoryHandler {
+	return &CategoryHandler{service: service, logger: logger}
 }
 
 func (h *CategoryHandler) RegisterRoutes(r *gin.Engine) {
@@ -31,6 +34,7 @@ func (h *CategoryHandler) RegisterRoutes(r *gin.Engine) {
 func (h *CategoryHandler) Create(ctx *gin.Context) {
 	var req dto.CreateCategoryRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		h.logger.Warn("invalid json for create category", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный JSON"})
 		return
 	}
@@ -38,9 +42,11 @@ func (h *CategoryHandler) Create(ctx *gin.Context) {
 	category, err := h.service.CreateCategory(req)
 	if err != nil {
 		if errors.Is(err, e.ErrCategoryNameExists) {
+			h.logger.Warn("category name exists", "name", req.Name)
 			ctx.JSON(http.StatusConflict, gin.H{"error": err.Error()})
 			return
 		}
+		h.logger.Error("failed to create category", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -51,6 +57,7 @@ func (h *CategoryHandler) Create(ctx *gin.Context) {
 func (h *CategoryHandler) GetByID(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
+		h.logger.Warn("invalid id param", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
@@ -58,9 +65,11 @@ func (h *CategoryHandler) GetByID(ctx *gin.Context) {
 	category, err := h.service.GetCategory(uint(id))
 	if err != nil {
 		if errors.Is(err, e.ErrCategoryNotFound) {
+			h.logger.Warn("category not found", "id", id)
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
+		h.logger.Error("failed to get category", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -71,15 +80,18 @@ func (h *CategoryHandler) GetByID(ctx *gin.Context) {
 func (h *CategoryHandler) Delete(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
+		h.logger.Warn("invalid id param for delete", "error", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "некорректный ID"})
 		return
 	}
 
 	if err := h.service.DeleteCategory(uint(id)); err != nil {
 		if errors.Is(err, e.ErrCategoryNotFound) {
+			h.logger.Warn("category not found for delete", "id", id)
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return
 		}
+		h.logger.Error("failed to delete category", "error", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
