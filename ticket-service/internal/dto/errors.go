@@ -7,5 +7,7 @@ var (
 	ErrEventNotPublished = errors.New("event not published")
 	ErrEventNotStarted   = errors.New("event not started")
 	ErrEventEnded        = errors.New("event already ended")
-	ErrTicketSoldOut     = errors.New("tickets sold out")
+
+	ErrTicketSoldOut             = errors.New("tickets sold out")
+	ErrTicketNotFoundOrNotActive = errors.New("tickets not found or not active")
 )

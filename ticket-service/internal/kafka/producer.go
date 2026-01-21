@@ -31,6 +31,16 @@ func (p *Producer) PublishTicketPurchased(
 	})
 }
 
+func (p *Producer) PublishTicketCheckin(
+	ctx context.Context,
+	event kafka.TicketCheckinEvent,
+) error {
+	return p.writer.WriteMessages(ctx, kafka_go.Message{
+		Topic: TopicTicketCheckin,
+		Value: mustJSON(event),
+	})
+}
+
 func (p *Producer) Close() error {
 	return p.writer.Close()
 }

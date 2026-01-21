@@ -30,9 +30,12 @@ func NewTicketHandler(
 }
 
 func (h *TicketHandler) RegisterRoutes(r *gin.Engine) {
-	r.GET("ping", h.Ping)
-	r.POST("events/:id/ticket-types", h.CreateTicketType)
-	r.POST("events/:id/tickets", h.CreateTicket)
+	r.GET("/ping", h.Ping)
+	r.POST("/tickets/validate", h.TicketValidate)
+	r.POST("/tickets/checkin", h.TicketCheckin)
+	r.GET("/tickets", h.GetTickets)
+	r.POST("/events/:id/ticket-types", h.CreateTicketType)
+	r.POST("/events/:id/tickets", h.CreateTicket)
 }
 
 func (h *TicketHandler) Ping(c *gin.Context) {
@@ -102,4 +105,54 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": ticket})
+}
+
+func (h *TicketHandler) GetTickets(c *gin.Context) {
+	var filter dto.TicketListFilter
+	if err := c.ShouldBindQuery(&filter); err != nil {
+		h.logger.Error("binding error", "error", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	tickets, err := h.ticketService.List(filter)
+	if err != nil {
+		h.logger.Error(err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": tickets})
+}
+
+func (h *TicketHandler) TicketValidate(c *gin.Context) {
+	var codeDto *dto.TicketCode
+	if err := c.ShouldBindJSON(&codeDto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	isExist, err := h.ticketService.IsExist(codeDto)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"valid": isExist})
+}
+
+func (h *TicketHandler) TicketCheckin(c *gin.Context) {
+	var codeDto *dto.TicketCode
+	if err := c.ShouldBindJSON(&codeDto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := h.ticketService.Checkin(c.Request.Context(), codeDto)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success"})
 }

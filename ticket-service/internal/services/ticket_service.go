@@ -118,3 +118,43 @@ func (s *TicketService) Create(ctx context.Context, eventId uint64, requestDto d
 
 	return ticket, nil
 }
+
+func (s *TicketService) List(filter dto.TicketListFilter) ([]models.Ticket, error) {
+	tickets, err := s.ticketRepo.List(filter)
+	if err != nil {
+		s.logger.Error(err.Error())
+		return tickets, err
+	}
+
+	return tickets, nil
+}
+
+func (s *TicketService) IsExist(codeDto *dto.TicketCode) (bool, error) {
+	isExist, err := s.ticketRepo.IsExist(codeDto)
+	if err != nil {
+		return false, err
+	}
+
+	return isExist, nil
+}
+
+func (s *TicketService) Checkin(ctx context.Context, codeDto *dto.TicketCode) error {
+	ticket, err := s.ticketRepo.Checkin(codeDto.Code)
+	if err != nil {
+		return err
+	}
+
+	event := kafka_events.TicketCheckinEvent{
+		TicketID:     uint64(ticket.ID),
+		EventID:      ticket.EventID,
+		TicketTypeID: uint64(ticket.TicketTypeID),
+		UserID:       ticket.UserID,
+		CheckedinAt:  ticket.CreatedAt,
+	}
+
+	if err := s.kafkaProducer.PublishTicketCheckin(ctx, event); err != nil {
+		s.logger.Warn("kafka publish failed", "error", err.Error())
+	}
+
+	return nil
+}
