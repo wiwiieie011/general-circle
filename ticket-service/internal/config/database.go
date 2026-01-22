@@ -11,11 +11,11 @@ import (
 )
 
 func DBConnect(logger *slog.Logger) *gorm.DB {
-	dbHost := os.Getenv("POSTGRES_HOST")
-	dbUser := os.Getenv("POSTGRES_USER")
-	dbPass := os.Getenv("POSTGRES_PASSWORD")
+	dbHost := os.Getenv("DB_HOST")
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
 	dbName := os.Getenv("TICKETS_DB_NAME")
-	dbPort := os.Getenv("POSTGRES_PORT")
+	dbPort := os.Getenv("DB_PORT")
 	dbMode := os.Getenv("DB_SSLMODE")
 
 	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=%v",

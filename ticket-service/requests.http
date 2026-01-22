@@ -22,3 +22,23 @@ Content-Type: application/json
   "ticket_type_id": 3,
   "user_id": 2
 }
+
+### Список тикетов
+GET http://localhost:8082/tickets?status=active
+Content-Type: application/json
+
+### Проверка тикета
+POST http://localhost:8082/tickets/validate
+Content-Type: application/json
+
+{
+  "code": "hdjshjdhsdh"
+}
+
+### Checkin тикета
+POST http://localhost:8082/tickets/checkin
+Content-Type: application/json
+
+{
+  "code": "TDGFHCJ"
+}
