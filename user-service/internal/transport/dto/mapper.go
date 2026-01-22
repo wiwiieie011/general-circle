@@ -2,6 +2,16 @@ package dto
 
 import "user-service/internal/models"
 
+func ToUserResponse(u *models.User) UserResponse {
+	return UserResponse{
+		ID:        u.ID,
+		Email:     u.Email,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Role:      string(u.Role),
+	}
+}
+
 func ToMeResponse(u *models.User) MeResponse {
 	return MeResponse{
 		ID:        u.ID,
