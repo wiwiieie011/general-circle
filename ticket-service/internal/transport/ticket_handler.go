@@ -134,7 +134,12 @@ func (h *TicketHandler) TicketValidate(c *gin.Context) {
 
 	isExist, err := h.ticketService.IsExist(codeDto)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		switch {
+		case errors.Is(err, dto.ErrTicketNotFoundOrNotActive):
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		}
 		return
 	}
 
@@ -150,7 +155,12 @@ func (h *TicketHandler) TicketCheckin(c *gin.Context) {
 
 	err := h.ticketService.Checkin(c.Request.Context(), codeDto)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		switch {
+		case errors.Is(err, dto.ErrTicketNotFoundOrNotActive):
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		}
 		return
 	}
 

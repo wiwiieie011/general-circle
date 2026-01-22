@@ -69,7 +69,7 @@ func (r *TicketRepository) IsExist(code string) (bool, error) {
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return false, nil
+			return false, dto.ErrTicketNotFoundOrNotActive
 		}
 		return false, err
 	}
