@@ -2,6 +2,7 @@ package transport
 
 import (
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -146,6 +147,7 @@ func (h *UserHandler) GetMe(ctx *gin.Context) {
 
 	user, err := h.userService.GetByID(userID)
 	if err != nil {
+		fmt.Println(err.Error())
 		if errors.Is(err, e.ErrUserNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 			return

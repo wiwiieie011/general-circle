@@ -4,7 +4,7 @@
 ### ============================================
 
 @baseUrl = http://localhost:8000
-@token = your_access_token_here
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJyb2xlIjoib3JnYW5pemVyIiwidHlwZSI6ImFjY2VzcyIsImlzcyI6InVzZXItc2VydmljZSIsImV4cCI6MTc2OTA5ODA0NCwiaWF0IjoxNzY5MDk3MTQ0fQ.cLxw-uva9ySrSemeFHSucqbbmEBNA2bWgHYKHs-U7pU
 @refreshToken = your_refresh_token_here
 
 ### ============================================
@@ -72,14 +72,17 @@ Authorization: Bearer {{token}}
 ### Получить список мероприятий
 GET {{baseUrl}}/api/events?page=1&limit=10
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 ### Получить список мероприятий с фильтрами
 GET {{baseUrl}}/api/events?page=1&limit=10&status=published&title=концерт
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 ### Получить мероприятие по ID
 GET {{baseUrl}}/api/events/1
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 ### Создать мероприятие (draft) - только организатор
 POST {{baseUrl}}/api/events

@@ -3,8 +3,10 @@ module gateway
 go 1.25.1
 
 require (
+	github.com/bytedance/gopkg v0.1.3
 	github.com/gin-gonic/gin v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/joho/godotenv v1.5.1
 )
 
 require (

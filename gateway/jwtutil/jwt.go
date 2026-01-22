@@ -2,6 +2,7 @@ package jwtutil
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -33,12 +34,17 @@ func ParseToken(tokenStr string) (*Claims, error) {
 		tokenStr,
 		&Claims{},
 		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
 			return getSecret(), nil
 		},
 	)
 
 	if err != nil {
-		return nil, ErrInvalidToken
+		fmt.Println(err.Error())
+		fmt.Printf("JWT_SECRET=%q\n", os.Getenv("JWT_SECRET"))
+		return nil, err
 	}
 
 	claims, ok := token.Claims.(*Claims)
