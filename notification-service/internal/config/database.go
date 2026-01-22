@@ -23,8 +23,8 @@ func Connect(logger *slog.Logger) *gorm.DB {
 	}
 
 	// Add short connect_timeout to fail-fast per attempt
-	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=%v connect_timeout=%d",
-		dbHost, dbUser, dbPass, dbName, dbPort, dbMode, 5)
+	dsn := fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=%v",
+		dbHost, dbUser, dbPass, dbName, dbPort, dbMode)
 
 	// Retry connection with backoff to handle DNS/startup races
 	var (

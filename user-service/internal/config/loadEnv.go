@@ -7,7 +7,7 @@ import (
 )
 
 func LoadEnv(logger *slog.Logger) {
-	if err := godotenv.Load(".env"); err != nil {
+	if err := godotenv.Load("../.env", ".env"); err != nil {
 		logger.Warn("no .env file found, using system env")
 		return
 	}

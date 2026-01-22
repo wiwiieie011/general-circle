@@ -1,0 +1,426 @@
+### ============================================
+### Gateway API Requests - Платформа "Сбор"
+### Базовый URL: http://localhost:8000
+### ============================================
+
+@baseUrl = http://localhost:8000
+@token = your_access_token_here
+@refreshToken = your_refresh_token_here
+
+### ============================================
+### 1. АУТЕНТИФИКАЦИЯ (без JWT)
+### ============================================
+
+### Регистрация нового пользователя
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123",
+  "first_name": "Иван",
+  "last_name": "Иванов"
+}
+
+### Вход в систему
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+
+### Обновление токена (Refresh Token)
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+### ============================================
+### 2. УПРАВЛЕНИЕ ПРОФИЛЕМ (требует JWT)
+### ============================================
+
+### Получить свой профиль
+GET {{baseUrl}}/api/users/me
+Authorization: Bearer {{token}}
+
+### Обновить профиль
+PUT {{baseUrl}}/api/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "first_name": "Петр",
+  "last_name": "Петров"
+}
+
+### Стать организатором
+POST {{baseUrl}}/api/users/me/become-organizer
+Authorization: Bearer {{token}}
+
+### Получить публичный профиль пользователя (только для организаторов)
+GET {{baseUrl}}/api/users/1
+Authorization: Bearer {{token}}
+
+### ============================================
+### 3. МЕРОПРИЯТИЯ (требует JWT)
+### ============================================
+
+### Получить список мероприятий
+GET {{baseUrl}}/api/events?page=1&limit=10
+Content-Type: application/json
+
+### Получить список мероприятий с фильтрами
+GET {{baseUrl}}/api/events?page=1&limit=10&status=published&title=концерт
+Content-Type: application/json
+
+### Получить мероприятие по ID
+GET {{baseUrl}}/api/events/1
+Content-Type: application/json
+
+### Создать мероприятие (draft) - только организатор
+POST {{baseUrl}}/api/events
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Концерт рок-группы",
+  "seats": 500,
+  "user_id": 1,
+  "category_id": 1
+}
+
+### Обновить мероприятие (только draft) - только организатор
+PUT {{baseUrl}}/api/events/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Обновленное название концерта",
+  "seats": 600
+}
+
+### Опубликовать мероприятие - только организатор
+POST {{baseUrl}}/api/events/1/publish
+Authorization: Bearer {{token}}
+
+### Отменить мероприятие - только организатор
+POST {{baseUrl}}/api/events/1/cancel
+Authorization: Bearer {{token}}
+
+### Удалить мероприятие (только draft) - только организатор
+DELETE {{baseUrl}}/api/events/1
+Authorization: Bearer {{token}}
+
+### Получить мероприятия пользователя
+GET {{baseUrl}}/api/events/users/1/events
+Content-Type: application/json
+
+### ============================================
+### 4. РАСПИСАНИЕ МЕРОПРИЯТИЙ (требует JWT)
+### ============================================
+
+### Создать расписание для мероприятия
+POST {{baseUrl}}/api/events/1/schedule
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "start_time": "2026-02-15T19:00:00Z",
+  "end_time": "2026-02-15T22:00:00Z",
+  "location": "Концертный зал"
+}
+
+### Получить расписание мероприятия
+GET {{baseUrl}}/api/events/1/schedule
+Content-Type: application/json
+
+### ============================================
+### 5. КАТЕГОРИИ МЕРОПРИЯТИЙ (требует JWT)
+### ============================================
+
+### Создать категорию - только организатор
+POST {{baseUrl}}/api/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Концерты"
+}
+
+### Получить список категорий
+GET {{baseUrl}}/api/categories
+Content-Type: application/json
+
+### Получить категорию по ID
+GET {{baseUrl}}/api/categories/1
+Content-Type: application/json
+
+### Удалить категорию - только организатор
+DELETE {{baseUrl}}/api/categories/1
+Authorization: Bearer {{token}}
+
+### ============================================
+### 6. ТИПЫ БИЛЕТОВ (требует JWT)
+### ============================================
+
+### Создать тип билета для мероприятия - только организатор
+POST {{baseUrl}}/api/ticket/events/1/ticket-types
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "vip",
+  "price": 5000,
+  "quantity": 100,
+  "sales_start": "2026-02-01T00:00:00Z",
+  "sales_end": "2026-02-10T23:59:59Z"
+}
+
+### Создать стандартный тип билета
+POST {{baseUrl}}/api/ticket/events/1/ticket-types
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "standard",
+  "price": 2000,
+  "quantity": 300,
+  "sales_start": "2026-02-01T00:00:00Z",
+  "sales_end": "2026-02-10T23:59:59Z"
+}
+
+### ============================================
+### 7. БИЛЕТЫ (требует JWT)
+### ============================================
+
+### Купить билет
+POST {{baseUrl}}/api/ticket/events/1/tickets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "ticket_type_id": 1,
+  "user_id": 1
+}
+
+### Получить список своих билетов
+GET {{baseUrl}}/api/ticket/tickets?user_id=1&status=active
+Authorization: Bearer {{token}}
+
+### Получить список билетов с фильтрами
+GET {{baseUrl}}/api/ticket/tickets?event_id=1&status=active&limit=10&offset=0
+Authorization: Bearer {{token}}
+
+### ============================================
+### 8. ВАЛИДАЦИЯ И CHECK-IN БИЛЕТОВ
+### ============================================
+
+### Проверить билет (валидация QR-кода)
+POST {{baseUrl}}/api/ticket/tickets/validate
+Content-Type: application/json
+
+{
+  "code": "ABCD1234"
+}
+
+### Использовать билет (check-in)
+POST {{baseUrl}}/api/ticket/tickets/checkin
+Content-Type: application/json
+
+{
+  "code": "ABCD1234"
+}
+
+### ============================================
+### 9. УВЕДОМЛЕНИЯ (требует JWT)
+### ============================================
+
+### Получить список уведомлений
+GET {{baseUrl}}/api/notifications/notifications?limit=50
+Authorization: Bearer {{token}}
+
+### Получить уведомления с пагинацией
+GET {{baseUrl}}/api/notifications/notifications?limit=20&last_id=10
+Authorization: Bearer {{token}}
+
+### Отметить уведомление как прочитанное
+PUT {{baseUrl}}/api/notifications/notifications/1/read
+Authorization: Bearer {{token}}
+
+### Отметить все уведомления как прочитанные
+PUT {{baseUrl}}/api/notifications/notifications/read-all
+Authorization: Bearer {{token}}
+
+### Удалить уведомление
+DELETE {{baseUrl}}/api/notifications/notifications/1
+Authorization: Bearer {{token}}
+
+### Получить настройки уведомлений
+GET {{baseUrl}}/api/notifications/notifications/preferences
+Authorization: Bearer {{token}}
+
+### Обновить настройки уведомлений
+PATCH {{baseUrl}}/api/notifications/notifications/preferences
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email_enabled": true,
+  "push_enabled": true
+}
+
+### Получить количество непрочитанных уведомлений
+GET {{baseUrl}}/api/notifications/notifications/unread-count
+Authorization: Bearer {{token}}
+
+### ============================================
+### ПОЛНЫЙ ФЛОУ: ОТ РЕГИСТРАЦИИ ДО CHECK-IN
+### ============================================
+
+### ШАГ 1: Регистрация пользователя
+# @name register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "password": "password123",
+  "first_name": "Новый",
+  "last_name": "Пользователь"
+}
+
+### ШАГ 2: Вход в систему (сохранить access_token и refresh_token)
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "password": "password123"
+}
+
+### ШАГ 3: Получить профиль (использовать токен из шага 2)
+# @name getProfile
+GET {{baseUrl}}/api/users/me
+Authorization: Bearer {{token}}
+
+### ШАГ 4: Стать организатором (использовать токен из шага 2)
+# @name becomeOrganizer
+POST {{baseUrl}}/api/users/me/become-organizer
+Authorization: Bearer {{token}}
+
+### ШАГ 5: Создать мероприятие (использовать новый токен из шага 4)
+# @name createEvent
+POST {{baseUrl}}/api/events
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Тестовое мероприятие",
+  "seats": 100,
+  "user_id": 1,
+  "category_id": 1
+}
+
+### ШАГ 6: Опубликовать мероприятие
+# @name publishEvent
+POST {{baseUrl}}/api/events/1/publish
+Authorization: Bearer {{token}}
+
+### ШАГ 7: Создать тип билета
+# @name createTicketType
+POST {{baseUrl}}/api/ticket/events/1/ticket-types
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "standard",
+  "price": 1000,
+  "quantity": 50,
+  "sales_start": "2026-01-01T00:00:00Z",
+  "sales_end": "2026-12-31T23:59:59Z"
+}
+
+### ШАГ 8: Пользователь покупает билет (использовать токен пользователя)
+# @name buyTicket
+POST {{baseUrl}}/api/ticket/events/1/tickets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "ticket_type_id": 1,
+  "user_id": 1
+}
+
+### ШАГ 9: Получить список своих билетов
+# @name getTickets
+GET {{baseUrl}}/api/ticket/tickets?user_id=1
+Authorization: Bearer {{token}}
+
+### ШАГ 10: Проверить билет (использовать code из шага 8)
+# @name validateTicket
+POST {{baseUrl}}/api/ticket/tickets/validate
+Content-Type: application/json
+
+{
+  "code": "CODE_FROM_STEP_8"
+}
+
+### ШАГ 11: Check-in билета
+# @name checkinTicket
+POST {{baseUrl}}/api/ticket/tickets/checkin
+Content-Type: application/json
+
+{
+  "code": "CODE_FROM_STEP_8"
+}
+
+### ШАГ 12: Получить уведомления
+# @name getNotifications
+GET {{baseUrl}}/api/notifications/notifications?limit=10
+Authorization: Bearer {{token}}
+
+### ============================================
+### ПРИМЕРЫ ОШИБОК
+### ============================================
+
+### Попытка доступа без токена (должна вернуть 401)
+GET {{baseUrl}}/api/users/me
+
+### Попытка создать мероприятие без токена (должна вернуть 401)
+POST {{baseUrl}}/api/events
+Content-Type: application/json
+
+{
+  "title": "Тест"
+}
+
+### Попытка купить билет для неопубликованного мероприятия (должна вернуть ошибку)
+POST {{baseUrl}}/api/ticket/events/999/tickets
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "ticket_type_id": 1,
+  "user_id": 1
+}
+
+### ============================================
+### ЗАМЕТКИ
+### ============================================
+###
+### 1. Все запросы к /api/auth/* НЕ требуют JWT токена
+### 2. Все остальные запросы к /api/* требуют JWT токена в заголовке Authorization
+### 3. После регистрации/входа сохраните access_token и refresh_token
+### 4. Используйте access_token для всех защищенных запросов
+### 5. Используйте refresh_token для обновления access_token
+### 6. Gateway автоматически добавляет X-User-Id и X-User-Role в заголовки запросов к сервисам
+### 7. Замените {{token}} на реальный токен из ответа login/register
+### 8. Замените ID мероприятий, билетов и т.д. на реальные значения из ответов API
+###
+### ============================================
+

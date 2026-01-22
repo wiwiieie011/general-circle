@@ -19,7 +19,7 @@ func main() {
 	config.SetEnv(log)
 
 	db := config.Connect(log)
-	redis := config.ConnectRedis(log)
+	// redis := config.ConnectRedis(log)
 
 	if err := db.AutoMigrate(
 		&models.Notification{},
@@ -31,7 +31,7 @@ func main() {
 
 	log.Info("migrations completed")
 	notRepo := repository.NewNotificationRepo(db, log)
-	notService := services.NewNotificationService(notRepo, log, redis)
+	notService := services.NewNotificationService(notRepo, log/*, redis*/)
 
 	consumer := kafka.NewConsumer(config.KafkaBrokers(), notService, log)
 	go consumer.Start()
