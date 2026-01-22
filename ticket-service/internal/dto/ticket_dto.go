@@ -18,5 +18,5 @@ type TicketListFilter struct {
 }
 
 type TicketCode struct {
-	Code string `json:"code"`
+	Code string `json:"code" binding:"required"`
 }

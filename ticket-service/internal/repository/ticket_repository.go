@@ -57,12 +57,12 @@ func (r *TicketRepository) List(filter dto.TicketListFilter) ([]models.Ticket, e
 	return tickets, nil
 }
 
-func (r *TicketRepository) IsExist(codeDto *dto.TicketCode) (bool, error) {
+func (r *TicketRepository) IsExist(code string) (bool, error) {
 	var ticket models.Ticket
 
 	err := r.db.
 		Model(&models.Ticket{}).
-		Where("code = ?", codeDto.Code).
+		Where("code = ?", code).
 		Where("status = ?", models.TicketStatusActive).
 		First(&ticket).
 		Error

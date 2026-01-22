@@ -130,7 +130,7 @@ func (s *TicketService) List(filter dto.TicketListFilter) ([]models.Ticket, erro
 }
 
 func (s *TicketService) IsExist(codeDto *dto.TicketCode) (bool, error) {
-	isExist, err := s.ticketRepo.IsExist(codeDto)
+	isExist, err := s.ticketRepo.IsExist(codeDto.Code)
 	if err != nil {
 		return false, err
 	}
@@ -149,7 +149,7 @@ func (s *TicketService) Checkin(ctx context.Context, codeDto *dto.TicketCode) er
 		EventID:      ticket.EventID,
 		TicketTypeID: uint64(ticket.TicketTypeID),
 		UserID:       ticket.UserID,
-		CheckedinAt:  ticket.CreatedAt,
+		CheckedinAt:  time.Now(),
 	}
 
 	if err := s.kafkaProducer.PublishTicketCheckin(ctx, event); err != nil {
