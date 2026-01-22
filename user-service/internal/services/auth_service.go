@@ -2,72 +2,146 @@ package services
 
 import (
 	"errors"
-	"time"
 
-	"user-service/internal/config"
+	"golang.org/x/crypto/bcrypt"
+
+	e "user-service/internal/errors"
 	"user-service/internal/models"
 	"user-service/internal/repository"
 	"user-service/internal/utils"
-
-	"golang.org/x/crypto/bcrypt"
-)
-
-var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrUserInactive       = errors.New("invalid user inactive")
 )
 
 type AuthService struct {
-	repo repository.UserRepository
-	jwt  config.JWTConfig
+	userRepo     repository.UserRepository
+	tokenManager *utils.TokenManager
 }
 
-func NewAuthService(repo repository.UserRepository, jwtCfg config.JWTConfig) *AuthService {
+func NewAuthService(
+	userRepo repository.UserRepository,
+	tokenManager *utils.TokenManager,
+) *AuthService {
 	return &AuthService{
-		repo: repo,
-		jwt:  jwtCfg,
+		userRepo:     userRepo,
+		tokenManager: tokenManager,
 	}
 }
 
-func (s *AuthService) Login(email, password string) (string, string, *models.User, error) {
-	user, err := s.repo.GetByEmail(email)
+
+func (s *AuthService) Register(email string,password string,firstName string,lastName string,) (*models.User, string, string, error) {
+
+	if _, err := s.userRepo.GetByEmail(email); err == nil {
+		return nil, "", "", e.ErrEmailAlreadyExists
+	}
+
+	passwordHash, err := bcrypt.GenerateFromPassword(
+		[]byte(password),
+		bcrypt.DefaultCost,
+	)
 	if err != nil {
-		return "", "", nil, ErrInvalidCredentials
+		return nil, "", "", err
+	}
+
+	user := &models.User{
+		Email:        email,
+		PasswordHash: string(passwordHash),
+		FirstName:    firstName,
+		LastName:     lastName,
+		Role:         models.RoleUser,
+		IsActive:     true,
+	}
+
+	if err := s.userRepo.Create(user); err != nil {
+		return nil, "", "", err
+	}
+
+	accessToken, err :=
+		s.tokenManager.GenerateAccessToken(user.ID, string(user.Role))
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	refreshToken, err :=
+		s.tokenManager.GenerateRefreshToken(user.ID)
+	if err != nil {
+		return nil, "", "", err
+	}
+
+	return user, accessToken, refreshToken, nil
+}
+
+
+func (s *AuthService) Login(email string,password string,) (*models.User, string, string, error) {
+
+	user, err := s.userRepo.GetByEmail(email)
+	if err != nil {
+		return nil, "", "", e.ErrInvalidCredentials
 	}
 
 	if !user.IsActive {
-		return "", "", nil, ErrUserInactive
+		return nil, "", "", e.ErrUserInactive
 	}
 
 	if err := bcrypt.CompareHashAndPassword(
 		[]byte(user.PasswordHash),
 		[]byte(password),
 	); err != nil {
-		return "", "", nil, ErrInvalidCredentials
+		return nil, "", "", e.ErrInvalidCredentials
 	}
 
-	accessTTL := time.Duration(s.jwt.AccessTTL) * time.Minute
-	refreshTTL := time.Duration(s.jwt.RefreshTTL) * 24 * time.Hour
-
-	access, err := utils.GenerateToken(
-		user.ID,
-		string(user.Role),
-		s.jwt.AccessSecret,
-		accessTTL,
-	)
+	accessToken, err :=
+		s.tokenManager.GenerateAccessToken(user.ID, string(user.Role))
 	if err != nil {
-		return "", "", nil, err
+		return nil, "", "", err
 	}
 
-	refresh, err := utils.GenerateToken(
-		user.ID,
-		string(user.Role),
-		s.jwt.RefreshSecret,
-		refreshTTL,
-	)
+	refreshToken, err :=
+		s.tokenManager.GenerateRefreshToken(user.ID)
 	if err != nil {
-		return "", "", nil, err
+		return nil, "", "", err
 	}
 
-	return access, refresh, user, nil
+	return user, accessToken, refreshToken, nil
 }
+
+func (s *AuthService) RefreshTokens(refreshToken string,) (string, string, error) {
+
+	claims, err := s.tokenManager.ParseToken(refreshToken)
+	if err != nil {
+		return "", "", err
+	}
+
+	if claims.Type != utils.RefreshToken {
+		return "", "", errors.New("invalid refresh token")
+	}
+
+	user, err := s.userRepo.GetByID(claims.UserID)
+	if err != nil {
+		return "", "", e.ErrUserNotFound
+	}
+
+	if !user.IsActive {
+		return "", "", e.ErrUserInactive
+	}
+
+	newAccessToken, err :=
+		s.tokenManager.GenerateAccessToken(user.ID, string(user.Role))
+	if err != nil {
+		return "", "", err
+	}
+
+	newRefreshToken, err :=
+		s.tokenManager.GenerateRefreshToken(user.ID)
+	if err != nil {
+		return "", "", err
+	}
+
+	return newAccessToken, newRefreshToken, nil
+}
+
+	func (s *AuthService) IssueAccessTokenForUser(	user *models.User,) (string, error) {
+		return s.tokenManager.GenerateAccessToken(
+			user.ID,
+			string(user.Role),
+		)
+	}
+

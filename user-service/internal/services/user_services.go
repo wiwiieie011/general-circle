@@ -1,100 +1,78 @@
 package services
 
 import (
-	"errors"
-
+	e "user-service/internal/errors"
 	"user-service/internal/models"
 	"user-service/internal/repository"
-
-	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type UserService interface {
-	Register(email, password, firstName, lastName string) (*models.User, error)
-	Login(email, password string) (*models.User, error)
 	GetByID(id uint) (*models.User, error)
-	BecomeOrganizer(userID uint) (*models.User, error)
+	UpdateProfile(id uint, firstName, lastName string) (*models.User, error)
+	BecomeOrganizer(id uint) (*models.User, error)
 }
 
 type userService struct {
-	userRepo repository.UserRepository
+	repo repository.UserRepository
 }
 
-func NewUserService(userRepo repository.UserRepository) UserService {
-	return &userService{userRepo: userRepo}
-}
-
-func (s *userService) Register(email, password, firstName, lastName string) (*models.User, error) {
-_, err := s.userRepo.GetByEmail(email)
-if err == nil {
-	return nil, errors.New("пользователь с таким email уже существует")
-}
-
-if !errors.Is(err, gorm.ErrRecordNotFound) {
-	return nil, err
-}
-
-
-	hashedPassword, err := bcrypt.GenerateFromPassword(
-		[]byte(password),
-		bcrypt.DefaultCost,
-	)
-	if err != nil {
-		return nil, err
+func NewUserService(repo repository.UserRepository) UserService {
+	return &userService{
+		repo: repo,
 	}
-
-	user := &models.User{
-		Email:     email,
-		PasswordHash:  string(hashedPassword),
-		FirstName: firstName,
-		LastName:  lastName,
-		Role:      models.RoleUser,
-	}
-
-	if err := s.userRepo.Create(user); err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
-func (s *userService) Login(email, password string) (*models.User, error) {
-	user, err := s.userRepo.GetByEmail(email)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("неверный email или пароль")
-		}
-		return nil, err
-	}
-
-	if err := bcrypt.CompareHashAndPassword(
-		[]byte(user.PasswordHash),
-		[]byte(password),
-	); err != nil {
-		return nil, errors.New("неверный email или пароль")
-	}
-
-	return user, nil
 }
 
 func (s *userService) GetByID(id uint) (*models.User, error) {
-	return s.userRepo.GetByID(id)
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, e.ErrUserNotFound
+	}
+
+	if user.Role != models.RoleOrganizer {
+		return nil, e.ErrNotOrganizer
+	}
+
+	if !user.IsActive {
+		return nil, e.ErrUserInactive
+	}
+
+	return user, nil
 }
 
-func (s *userService) BecomeOrganizer(userID uint) (*models.User, error) {
-	user, err := s.userRepo.GetByID(userID)
+func (s *userService) UpdateProfile(
+	id uint,
+	firstName string,
+	lastName string,
+) (*models.User, error) {
+
+	user, err := s.repo.GetByID(id)
 	if err != nil {
+		return nil, e.ErrUserNotFound
+	}
+
+	user.FirstName = firstName
+	user.LastName = lastName
+
+	if err := s.repo.Update(user); err != nil {
 		return nil, err
 	}
 
+	return user, nil
+}
+
+func (s *userService) BecomeOrganizer(id uint) (*models.User, error) {
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, e.ErrUserNotFound
+	}
+
 	if user.Role == models.RoleOrganizer {
-		return nil, errors.New("пользователь уже организатор")
+		return nil, e.ErrAlreadyOrganizer
 	}
 
 	user.Role = models.RoleOrganizer
-
-	if err := s.userRepo.Update(user); err != nil {
+	
+	if err := s.repo.Update(user); err != nil {
 		return nil, err
 	}
 
