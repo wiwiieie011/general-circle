@@ -85,6 +85,16 @@ services:
     depends_on:
       - kafka
 
+  kafka-init-topics:
+    image: apache/kafka:3.7.0
+    depends_on:
+      - kafka
+    volumes:
+      - ./infra/kafka/init-topics.sh:/init-topics.sh
+    command: bash /init-topics.sh
+    environment:
+      KAFKA_BROKER: kafka:9092
+
   # --- Services ---
   user-service:
     build:
@@ -93,6 +103,7 @@ services:
     depends_on:
       - user-db
       - kafka
+      - kafka-init-topics
     environment:
       PORT: ${USER_SERVICE_PORT}
       DB_HOST: user-db
@@ -117,6 +128,7 @@ services:
     depends_on:
       - ticket-db
       - kafka
+      - kafka-init-topics
     environment:
       SERVICE_PORT: ${TICKET_SERVICE_PORT}
       DB_HOST: ticket-db
@@ -139,6 +151,7 @@ services:
     depends_on:
       - event-db
       - kafka
+      - kafka-init-topics
     environment:
       PORT: ${EVENT_SERVICE_PORT}
       DB_HOST: event-db
@@ -159,6 +172,7 @@ services:
     depends_on:
       - notification-db
       - kafka
+      - kafka-init-topics
       - redis
     environment:
       PORT: ${NOTIFICATION_SERVICE_PORT}

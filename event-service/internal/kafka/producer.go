@@ -41,9 +41,11 @@ func NewProducer(brokers []string, logger *slog.Logger) *Producer {
 		writer: &kafka.Writer{
 			Addr:         kafka.TCP(brokers...),
 			Balancer:     &kafka.LeastBytes{},
-			WriteTimeout: 10 * time.Second,
+			WriteTimeout: 20 * time.Second,
+			ReadTimeout:  10 * time.Second,
 			RequiredAcks: kafka.RequireOne,
 			Async:        false,
+			Compression:  kafka.Snappy,
 		},
 		logger: logger,
 	}
@@ -69,18 +71,33 @@ func (p *Producer) SendEventCancelled(ctx context.Context, eventID uint) error {
 		Time:  time.Now(),
 	}
 
-	err = p.writer.WriteMessages(ctx, kafkaMessage)
-	if err != nil {
-		p.logger.Error("failed to send event cancelled message",
-			"error", err,
-			"event_id", eventID)
-		return err
+	// Retry logic
+	maxRetries := 3
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		err = p.writer.WriteMessages(ctx, kafkaMessage)
+		if err == nil {
+			p.logger.Info("event cancelled message sent",
+				"event_id", eventID,
+				"topic", eventCancelled)
+			return nil
+		}
+
+		if attempt < maxRetries-1 {
+			backoff := time.Duration(1<<uint(attempt)) * time.Second
+			p.logger.Warn("failed to send event cancelled message, retrying",
+				"error", err,
+				"event_id", eventID,
+				"attempt", attempt+1,
+				"backoff", backoff)
+			time.Sleep(backoff)
+		}
 	}
 
-	p.logger.Info("event cancelled message sent",
+	p.logger.Error("failed to send event cancelled message after retries",
+		"error", err,
 		"event_id", eventID,
-		"topic", eventCancelled)
-	return nil
+		"max_retries", maxRetries)
+	return err
 }
 
 func (p *Producer) Close() error {
@@ -110,12 +127,29 @@ func (p *Producer) SendEventReminder(ctx context.Context, eventID uint, eventTit
 		Time:  time.Now(),
 	}
 
-	err = p.writer.WriteMessages(ctx, kafkaMessage)
-	if err != nil {
-		p.logger.Error("failed to send event reminder", "error", err, "event_id", eventID)
-		return err
+	// Retry logic
+	maxRetries := 3
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		err = p.writer.WriteMessages(ctx, kafkaMessage)
+		if err == nil {
+			p.logger.Info("event reminder message sent", "event_id", eventID, "topic", eventReminder)
+			return nil
+		}
+
+		if attempt < maxRetries-1 {
+			backoff := time.Duration(1<<uint(attempt)) * time.Second
+			p.logger.Warn("failed to send event reminder message, retrying",
+				"error", err,
+				"event_id", eventID,
+				"attempt", attempt+1,
+				"backoff", backoff)
+			time.Sleep(backoff)
+		}
 	}
 
-	p.logger.Info("event reminder message sent", "event_id", eventID, "topic", eventReminder)
-	return nil
+	p.logger.Error("failed to send event reminder message after retries",
+		"error", err,
+		"event_id", eventID,
+		"max_retries", maxRetries)
+	return err
 }

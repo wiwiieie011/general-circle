@@ -1,6 +1,3 @@
-#!/usr/bin/env bash
-set -e
-
 BROKER=kafka:9092
 
 /opt/kafka/bin/kafka-topics.sh --bootstrap-server $BROKER --create --if-not-exists --topic ticket.purchased --partitions 3 --replication-factor 1
