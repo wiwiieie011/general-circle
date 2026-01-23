@@ -10,6 +10,7 @@ type UserService interface {
 	GetByID(id uint) (*models.User, error)
 	UpdateProfile(id uint, firstName, lastName string) (*models.User, error)
 	BecomeOrganizer(id uint) (*models.User, error)
+	GetByIDs(id uint) (*models.User, error)
 }
 
 type userService struct {
@@ -30,6 +31,18 @@ func (s *userService) GetByID(id uint) (*models.User, error) {
 
 	if user.Role != models.RoleOrganizer {
 		return nil, e.ErrNotOrganizer
+	}
+
+	if !user.IsActive {
+		return nil, e.ErrUserInactive
+	}
+
+	return user, nil
+}
+func (s *userService) GetByIDs(id uint) (*models.User, error) {
+	user, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, e.ErrUserNotFound
 	}
 
 	if !user.IsActive {
