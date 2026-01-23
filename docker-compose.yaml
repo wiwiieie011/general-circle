@@ -1,14 +1,56 @@
 services:
-  postgres:
+  # --- Databases ---
+  user-db:
     image: postgres:16
-    ports:
-      - "5432:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${USER_DB_NAME}
+    ports:
+      - "${USER_DB_PORT-5433}:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - user_pg_data:/var/lib/postgresql/data
 
+  ticket-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${TICKETS_DB_NAME}
+    ports:
+      - "${TICKET_DB_PORT-5434}:5432"
+    volumes:
+      - ticket_pg_data:/var/lib/postgresql/data
+
+  event-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${EVENTS_DB_NAME}
+    ports:
+      - "${EVENT_DB_PORT-5435}:5432"
+    volumes:
+      - event_pg_data:/var/lib/postgresql/data
+
+  notification-db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${NOTIFICATIONS_DB_NAME}
+    ports:
+      - "${NOTIFICATION_DB_PORT-5436}:5432"
+    volumes:
+      - notification_pg_data:/var/lib/postgresql/data
+
+  # Optional Redis for notification preferences/cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT-6379}:6379"
+
+  # --- Kafka ---
   kafka:
     image: apache/kafka:3.7.0
     ports:
@@ -22,15 +64,15 @@ services:
       - bash
       - -c
       - |
-          set -e
-          if [ ! -f /var/lib/kafka/data/meta.properties ]; then
-            echo "Formatting KRaft storage"
-            /opt/kafka/bin/kafka-storage.sh format \
-              --cluster-id kraft-cluster-1 \
-              --config /opt/kafka/config/kraft/server.properties
-          fi
+        set -e
+        if [ ! -f /var/lib/kafka/data/meta.properties ]; then
+          echo "Formatting KRaft storage"
+          /opt/kafka/bin/kafka-storage.sh format \
+            --cluster-id kraft-cluster-1 \
+            --config /opt/kafka/config/kraft/server.properties
+        fi
 
-          exec /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/kraft/server.properties
+        exec /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/kraft/server.properties
 
   kafka-ui:
     image: kafbat/kafka-ui:main
@@ -43,6 +85,118 @@ services:
     depends_on:
       - kafka
 
+  # --- Services ---
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    depends_on:
+      - user-db
+      - kafka
+    environment:
+      PORT: ${USER_SERVICE_PORT}
+      DB_HOST: user-db
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER}
+      DB_PASS: ${POSTGRES_PASSWORD}
+      DB_NAME: ${USER_DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+      KAFKA_BROKER: ${KAFKA_BROKER}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL}
+      JWT_REFRESH_TTL: ${JWT_REFRESH_TTL}
+      LOG_LEVEL: ${LOG_LEVEL}
+    ports:
+      - "${USER_SERVICE_PORT}:8081"
+
+  ticket-service:
+    build:
+      context: ./ticket-service
+      dockerfile: Dockerfile
+    depends_on:
+      - ticket-db
+      - kafka
+    environment:
+      SERVICE_PORT: ${TICKET_SERVICE_PORT}
+      DB_HOST: ticket-db
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER}
+      DB_PASS: ${POSTGRES_PASSWORD}
+      TICKETS_DB_NAME: ${TICKETS_DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+      KAFKA_BROKER: ${KAFKA_BROKER}
+      LOG_LEVEL: ${LOG_LEVEL}
+      # Base URL для обращения к event-service из ticket-service
+      EVENT_SERVICE_BASE_URL: http://event-service:8083
+    ports:
+      - "${TICKET_SERVICE_PORT}:8082"
+
+  event-service:
+    build:
+      context: ./event-service
+      dockerfile: Dockerfile
+    depends_on:
+      - event-db
+      - kafka
+    environment:
+      PORT: ${EVENT_SERVICE_PORT}
+      DB_HOST: event-db
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER}
+      DB_PASS: ${POSTGRES_PASSWORD}
+      DB_NAME: ${EVENTS_DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+      KAFKA_BROKER: ${KAFKA_BROKER}
+      LOG_LEVEL: ${LOG_LEVEL}
+    ports:
+      - "${EVENT_SERVICE_PORT}:8083"
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: DockerFIle
+    depends_on:
+      - notification-db
+      - kafka
+      - redis
+    environment:
+      PORT: ${NOTIFICATION_SERVICE_PORT}
+      DB_HOST: notification-db
+      DB_PORT: "5432"
+      DB_USER: ${POSTGRES_USER}
+      DB_PASS: ${POSTGRES_PASSWORD}
+      DB_NAME: ${NOTIFICATIONS_DB_NAME}
+      DB_SSLMODE: ${DB_SSLMODE}
+      KAFKA_BROKER: ${KAFKA_BROKER}
+      KAFKA_BROKERS: ${KAFKA_BROKERS}
+      REDIS_ADDR: redis:6379
+      REDIS_DB: "0"
+      LOG_LEVEL: ${LOG_LEVEL}
+    ports:
+      - "${NOTIFICATION_SERVICE_PORT}:8084"
+
+  gateway:
+    build:
+      context: ./gateway
+    depends_on:
+      - user-service
+      - ticket-service
+      - event-service
+      - notification-service
+    environment:
+      PORT: ${GATEWAY_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+      USER_SERVICE_URL: http://user-service:8081
+      TICKET_SERVICE_URL: http://ticket-service:8082
+      EVENT_SERVICE_URL: http://event-service:8083
+      NOTIFICATION_SERVICE_URL: http://notification-service:8084
+    ports:
+      - "${GATEWAY_PORT}:8000"
+
 volumes:
-  pg_data:
+  user_pg_data:
+  ticket_pg_data:
+  event_pg_data:
+  notification_pg_data:
   kafka_data:

@@ -14,11 +14,10 @@ import (
 func main() {
 	logger := slog.New(slog.Default().Handler())
 
-	err := godotenv.Load("../.env", ".env")
+	err := godotenv.Load(".env")
 
 	if err != nil {
-		logger.Error("failed to load .env file", "error", err)
-		os.Exit(1)
+		logger.Warn("no .env file found, using system env", "error", err)
 	}
 
 	db := config.DBConnect(logger)

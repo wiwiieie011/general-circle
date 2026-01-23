@@ -20,7 +20,11 @@ func RegisterRoutes(
 ) {
 	eventClientBaseUrl := os.Getenv("EVENT_SERVICE_BASE_URL")
 	if eventClientBaseUrl == "" {
-		logger.Error("cannot resolve env param: EVENT_SERVICE_BASE_URL")
+		// Fallback на общее имя переменной, используемой в gateway
+		eventClientBaseUrl = os.Getenv("EVENT_SERVICE_URL")
+	}
+	if eventClientBaseUrl == "" {
+		logger.Error("cannot resolve env param: EVENT_SERVICE_BASE_URL or EVENT_SERVICE_URL")
 		os.Exit(1)
 	}
 

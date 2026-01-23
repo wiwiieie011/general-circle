@@ -145,7 +145,7 @@ func (h *UserHandler) GetMe(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.GetByID(userID)
+	user, err := h.userService.GetByIDs(userID)
 	if err != nil {
 		fmt.Println(err.Error())
 		if errors.Is(err, e.ErrUserNotFound) {

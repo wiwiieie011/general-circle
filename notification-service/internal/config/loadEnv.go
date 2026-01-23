@@ -2,17 +2,15 @@ package config
 
 import (
 	"log/slog"
-	"os"
 
 	"github.com/joho/godotenv"
 )
 
 func SetEnv(logger *slog.Logger) {
-	err := godotenv.Load("../.env", ".env")
+	err := godotenv.Load(".env")
 
 	if err != nil {
-		logger.Error("failed to load .env file", "error", err)
-		os.Exit(1)
+		logger.Warn("no .env file found, using system env", "error", err)
 	}
 
 	logger.Info("environment variables loaded successfully")
