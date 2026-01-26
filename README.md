@@ -28,53 +28,6 @@
 - **Notification Service** — отправка уведомлений через Kafka
 - **Gateway** — единая точка входа с JWT middleware
 
-## 📦 Prerequisites
-
-```bash
-Go 1.21+
-Docker & Docker Compose
-PostgreSQL 14+
-Apache Kafka
-```
-
-## ⚙️ Installation
-
-```bash
-# Клонировать репозиторий
-git clone <repository-url>
-cd general-circle
-
-# Установить зависимости для каждого сервиса
-cd event-service && go mod download
-cd ../ticket-service && go mod download
-cd ../user-service && go mod download
-```
-
-## 🎯 Running
-
-```bash
-# Запустить все сервисы через Docker Compose
-docker-compose up -d
-
-# Или запустить отдельный сервис локально
-cd event-service
-export JWT_SECRET=your_secret_key
-go run cmd/app/main.go
-```
-
-## 🔧 Дополнительные команды
-
-```bash
-# Запуск тестов
-make test
-
-# Инициализация Kafka топиков
-./infra/kafka/init-topics.sh
-
-# Сборка Docker образов
-docker-compose build
-```
-
 ## 👥 Contributors
 
 - 👨‍💻 - dzhambazbiev-ux
@@ -82,24 +35,9 @@ docker-compose build
 - 👨‍💻 - Strannik-chr
 - 👨‍💻 - wiwiieie011
 
-## 📚 API Documentation
-
-Подробная документация API контрактов доступна в [docs/api-contracts.md](docs/api-contracts.md)
-
-## 📖 Business Flows
-
-Описание бизнес-процессов и взаимодействия сервисов: [BUSINESS_FLOWS.md](BUSINESS_FLOWS.md)
-
 ## 💡 Architecture Notes
 
 - **Асинхронная передача данных** через Kafka для слабой связанности сервисов
 - **JWT-токены** для безопасной аутентификации через Gateway
 - **Repository pattern** для работы с БД
 - **Service layer** для бизнес-логики
-
-## 📞 Feedback & Support
-
-Если у вас есть вопросы, предложения или вы нашли баг:
-
-- Создайте issue в репозитории
-- Свяжитесь с командой разработки
