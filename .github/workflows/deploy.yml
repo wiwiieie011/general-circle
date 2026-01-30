@@ -4,12 +4,12 @@ on:
   workflow_run:
     workflows: [ "Build and Push Images" ]
     types: [ completed ]
-    branches: [ main ]
 
 jobs:
   deploy:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+
     steps:
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.2.0
@@ -18,8 +18,28 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            # Прерываемся при любой ошибке
             set -e
-            cd "${{ secrets.COMPOSE_DIR }}"
-            docker compose pull
-            docker compose up -d
-            docker image prune -f
+
+            echo "📂 Переходим в директорию с docker-compose: ${{ secrets.COMPOSE_DIR }}"
+            if ! cd "${{ secrets.COMPOSE_DIR }}"; then
+              echo "❌ Ошибка: директория ${{ secrets.COMPOSE_DIR }} не найдена"
+              exit 1
+            fi
+
+            echo "⬇️ Загружаем последние Docker-образы"
+            if ! docker compose pull; then
+              echo "❌ Ошибка: docker compose pull не удался"
+              exit 1
+            fi
+
+            echo "🚀 Поднимаем контейнеры"
+            if ! docker compose up -d; then
+              echo "❌ Ошибка: docker compose up не удался"
+              exit 1
+            fi
+
+            echo "🧹 Чистим неиспользуемые Docker-образы"
+            docker image prune -f || echo "⚠️ docker image prune не удался, но продолжаем"
+
+            echo "✅ Deploy завершён успешно!"
