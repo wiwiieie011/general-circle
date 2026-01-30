@@ -24,14 +24,17 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates tzdata && update-ca-certificates
 
+# Копируем только бинарник из builder stage
 COPY --from=builder /out/user-service /app/user-service
-COPY ../.env /app/.env
 
+# Не копируем .env внутрь образа!
+# ENV переменные можно задавать через Docker Compose
 ENV GIN_MODE=release \
     PORT=8081
 
 EXPOSE 8081
 
+# Создаём пользователя и меняем владельца
 RUN adduser -D -H appuser && chown -R appuser /app
 USER appuser
 

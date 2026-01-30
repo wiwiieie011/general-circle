@@ -24,9 +24,10 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates tzdata && update-ca-certificates
 
+# Копируем только бинарник
 COPY --from=builder /out/gateway /app/gateway
-COPY ../.env /app/.env
 
+# ENV переменные подключаются через Docker Compose
 ENV GIN_MODE=release \
     PORT=8000
 

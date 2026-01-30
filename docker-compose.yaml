@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   # --- Databases ---
   user-db:
@@ -44,7 +46,7 @@ services:
     volumes:
       - notification_pg_data:/var/lib/postgresql/data
 
-  # Optional Redis for notification preferences/cache
+  # --- Redis for caching ---
   redis:
     image: redis:7-alpine
     ports:
@@ -71,7 +73,6 @@ services:
             --cluster-id kraft-cluster-1 \
             --config /opt/kafka/config/kraft/server.properties
         fi
-
         exec /opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/kraft/server.properties
 
   kafka-ui:
@@ -95,7 +96,7 @@ services:
     environment:
       KAFKA_BROKER: kafka:9092
 
-  # --- Services ---
+  # --- Application Services ---
   user-service:
     build:
       context: ./user-service
@@ -130,16 +131,15 @@ services:
       - kafka
       - kafka-init-topics
     environment:
-      SERVICE_PORT: ${TICKET_SERVICE_PORT}
+      PORT: ${TICKET_SERVICE_PORT}
       DB_HOST: ticket-db
       DB_PORT: "5432"
       DB_USER: ${POSTGRES_USER}
       DB_PASS: ${POSTGRES_PASSWORD}
-      TICKETS_DB_NAME: ${TICKETS_DB_NAME}
+      DB_NAME: ${TICKETS_DB_NAME}
       DB_SSLMODE: ${DB_SSLMODE}
       KAFKA_BROKER: ${KAFKA_BROKER}
       LOG_LEVEL: ${LOG_LEVEL}
-      # Base URL для обращения к event-service из ticket-service
       EVENT_SERVICE_BASE_URL: http://event-service:8083
     ports:
       - "${TICKET_SERVICE_PORT}:8082"
@@ -168,7 +168,7 @@ services:
   notification-service:
     build:
       context: ./notification-service
-      dockerfile: DockerFIle
+      dockerfile: Dockerfile
     depends_on:
       - notification-db
       - kafka
@@ -193,6 +193,7 @@ services:
   gateway:
     build:
       context: ./gateway
+      dockerfile: Dockerfile
     depends_on:
       - user-service
       - ticket-service

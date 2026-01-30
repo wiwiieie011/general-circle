@@ -10,9 +10,11 @@ ARG GOSUMDB=sum.golang.org
 ENV GOPROXY=${GOPROXY} \
     GOSUMDB=${GOSUMDB}
 
+# Cache modules
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Copy the rest of the source
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/event-service ./cmd/app
@@ -24,9 +26,11 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates tzdata && update-ca-certificates
 
+# Копируем только бинарник
 COPY --from=builder /out/event-service /app/event-service
-COPY ../.env /app/.env
 
+# Не копируем .env внутрь образа!
+# ENV переменные подключаем через Docker Compose
 ENV GIN_MODE=release \
     PORT=8083
 

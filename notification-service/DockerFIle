@@ -1,5 +1,3 @@
-## Multi-stage Dockerfile for notification-service
-
 # --- Build stage ---
 FROM golang:1.25-alpine AS builder
 
@@ -10,7 +8,7 @@ RUN apk add --no-cache git ca-certificates tzdata && update-ca-certificates
 ARG GOPROXY=https://goproxy.io,direct
 ARG GOSUMDB=sum.golang.org
 ENV GOPROXY=${GOPROXY} \
-	GOSUMDB=${GOSUMDB}
+    GOSUMDB=${GOSUMDB}
 
 # Cache modules
 COPY go.mod go.sum ./
@@ -21,7 +19,6 @@ COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/notification-service ./cmd/app
 
-
 # --- Runtime stage ---
 FROM alpine:3.20
 
@@ -29,11 +26,13 @@ WORKDIR /app
 
 RUN apk add --no-cache ca-certificates tzdata && update-ca-certificates
 
+# Копируем только бинарник
 COPY --from=builder /out/notification-service /app/notification-service
-COPY ../.env /app/.env
 
+# Не копируем .env внутрь образа!
+# Переменные окружения подключаются через Docker Compose
 ENV GIN_MODE=release \
-	PORT=8084
+    PORT=8084
 
 EXPOSE 8084
 
