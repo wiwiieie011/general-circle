@@ -14,10 +14,22 @@ jobs:
       - name: Check required secrets
         run: |
           echo "🔹 Проверка обязательных секретов..."
-          : "${{ secrets.SSH_HOST:?❌ SSH_HOST не задан!}}"
-          : "${{ secrets.SSH_USER:?❌ SSH_USER не задан!}}"
-          : "${{ secrets.SSH_KEY:?❌ SSH_KEY не задан!}}"
-          : "${{ secrets.COMPOSE_DIR:?❌ COMPOSE_DIR не задан!}}"
+          if [ -z "${{ secrets.SSH_HOST }}" ]; then
+            echo "❌ Ошибка: SSH_HOST не задан!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SSH_USER }}" ]; then
+            echo "❌ Ошибка: SSH_USER не задан!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.SSH_KEY }}" ]; then
+            echo "❌ Ошибка: SSH_KEY не задан!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.COMPOSE_DIR }}" ]; then
+            echo "❌ Ошибка: COMPOSE_DIR не задан!"
+            exit 1
+          fi
           echo "✅ Все секреты установлены."
 
       - name: Debug env
