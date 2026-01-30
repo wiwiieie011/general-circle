@@ -11,32 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check required secrets
-        run: |
-          echo "🔹 Проверка обязательных секретов..."
-          if [ -z "${{ secrets.SSH_HOST }}" ]; then
-            echo "❌ Ошибка: SSH_HOST не задан!"
-            exit 1
-          fi
-          if [ -z "${{ secrets.SSH_USER }}" ]; then
-            echo "❌ Ошибка: SSH_USER не задан!"
-            exit 1
-          fi
-          if [ -z "${{ secrets.SSH_KEY }}" ]; then
-            echo "❌ Ошибка: SSH_KEY не задан!"
-            exit 1
-          fi
-          if [ -z "${{ secrets.COMPOSE_DIR }}" ]; then
-            echo "❌ Ошибка: COMPOSE_DIR не задан!"
-            exit 1
-          fi
-          echo "✅ Все секреты установлены."
-
       - name: Debug env
         run: |
           echo "COMPOSE_DIR=${{ secrets.COMPOSE_DIR }}"
-          echo "SSH_HOST=${{ secrets.SSH_HOST }}"
-          echo "SSH_USER=${{ secrets.SSH_USER }}"
 
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.2.0
@@ -46,26 +23,12 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
-
-            echo "📂 Переходим в директорию с docker-compose: ${{ secrets.COMPOSE_DIR }}"
-            if ! cd "${{ secrets.COMPOSE_DIR }}"; then
-              echo "❌ Ошибка: директория ${{ secrets.COMPOSE_DIR }} не найдена"
-              exit 1
-            fi
-
-            echo "⬇️ Загружаем последние Docker-образы"
-            if ! docker compose pull; then
-              echo "❌ Ошибка: docker compose pull не удался"
-              exit 1
-            fi
-
+            echo "📂 Переходим в директорию: ${{ secrets.COMPOSE_DIR }}"
+            cd "${{ secrets.COMPOSE_DIR }}"
+            echo "⬇️ Загружаем Docker-образы"
+            docker compose pull
             echo "🚀 Поднимаем контейнеры"
-            if ! docker compose up -d; then
-              echo "❌ Ошибка: docker compose up не удался"
-              exit 1
-            fi
-
-            echo "🧹 Чистим неиспользуемые Docker-образы"
-            docker image prune -f || echo "⚠️ docker image prune не удался, но продолжаем"
-
+            docker compose up -d
+            echo "🧹 Чистим старые Docker-образы"
+            docker image prune -f
             echo "✅ Deploy завершён успешно!"
