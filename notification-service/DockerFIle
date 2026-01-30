@@ -40,4 +40,3 @@ RUN adduser -D -H appuser && chown -R appuser /app
 USER appuser
 
 ENTRYPOINT ["/app/notification-service"]
-
