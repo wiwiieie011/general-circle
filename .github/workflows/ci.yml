@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Go Test (monorepo)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - event-service
+          - notification-service
+          - user-service
+          - ticket-service
+          - gateway
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          # ставим последнюю стабильную (go.mod у вас 1.25.x, чтобы не падать — используем stable)
+          go-version: 'stable'
+          cache: true
+
+      - name: Go Mod Download
+        working-directory: ${{ matrix.service }}
+        run: go mod download
+
+      - name: Vet
+        working-directory: ${{ matrix.service }}
+        run: go vet ./...
+
+      - name: Lint (optional)
+        working-directory: ${{ matrix.service }}
+        run: |
+          if command -v golangci-lint >/dev/null 2>&1; then
+            golangci-lint run ./...
+          else
+            echo "golangci-lint not installed; skipping"
+          fi
+
+      - name: Test
+        working-directory: ${{ matrix.service }}
+        run: go test -v ./...
