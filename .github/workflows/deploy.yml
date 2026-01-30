@@ -1,0 +1,25 @@
+name: Deploy via Docker Compose
+
+on:
+  workflow_run:
+    workflows: [ "Build and Push Images" ]
+    types: [ completed ]
+    branches: [ main ]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd "${{ secrets.COMPOSE_DIR }}"
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
