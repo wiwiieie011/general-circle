@@ -2,8 +2,8 @@ name: Deploy via Docker Compose
 
 on:
   workflow_run:
-    workflows: [ "Build and Push Images" ]
-    types: [ completed ]
+    workflows: ["Build and Push Images"]
+    types: [completed]
 
 jobs:
   deploy:
@@ -11,6 +11,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check required secrets
+        run: |
+          echo "🔹 Проверка обязательных секретов..."
+          : "${{ secrets.SSH_HOST:?❌ SSH_HOST не задан!}}"
+          : "${{ secrets.SSH_USER:?❌ SSH_USER не задан!}}"
+          : "${{ secrets.SSH_KEY:?❌ SSH_KEY не задан!}}"
+          : "${{ secrets.COMPOSE_DIR:?❌ COMPOSE_DIR не задан!}}"
+          echo "✅ Все секреты установлены."
+
+      - name: Debug env
+        run: |
+          echo "COMPOSE_DIR=${{ secrets.COMPOSE_DIR }}"
+          echo "SSH_HOST=${{ secrets.SSH_HOST }}"
+          echo "SSH_USER=${{ secrets.SSH_USER }}"
+
       - name: SSH deploy
         uses: appleboy/ssh-action@v1.2.0
         with:
@@ -18,7 +33,6 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # Прерываемся при любой ошибке
             set -e
 
             echo "📂 Переходим в директорию с docker-compose: ${{ secrets.COMPOSE_DIR }}"
