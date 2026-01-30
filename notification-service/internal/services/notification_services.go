@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
 	// "encoding/json"
 	"errors"
 	// "fmt"
@@ -77,6 +78,17 @@ func (s *notificationService) GetNotifications(ctx context.Context, userID uint,
 	}
 
 	if lastID == 0 {
+		// Если Redis не инициализирован (например, в unit-тестах) — обходим кэш
+		if s.redis == nil {
+			nots, err := s.notificationRepo.GetNotifications(userID, limit, 0)
+			if err != nil {
+				s.log.Error("failed to get notifications", "error", err, "userID", userID)
+				return nil, err
+			}
+			s.log.Info("notifications fetched from db (redis disabled)", "userID", userID, "count", len(nots))
+			return nots, nil
+		}
+
 		cacheKey := fmt.Sprintf("notifications:%d:first", userID)
 		cached, err := s.redis.Get(ctx, cacheKey).Result()
 		if err == nil && cached != "" {

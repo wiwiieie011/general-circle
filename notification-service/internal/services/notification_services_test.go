@@ -2,10 +2,13 @@ package services
 
 import (
 	"context"
+
 	"errors"
+
 	"io"
 	"log/slog"
 	"testing"
+
 
 	"notification-service/internal/dto"
 	"notification-service/internal/models"
@@ -22,6 +25,7 @@ type mockRepo struct {
 	GetNotificationPreferencesFn    func(userID uint) (*models.NotificationPreference, error)
 	UpdateNotificationPreferencesFn func(*models.NotificationPreference) error
 	UnreadNotificationsCountsFn     func(userID uint) (int64, error)
+	
 }
 
 func (m *mockRepo) Create(n *models.Notification) error {
